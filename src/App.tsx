@@ -1217,6 +1217,36 @@ export default function App() {
           )}
         </div>
       </main>
+      <footer className="bg-slate-900 border-t border-slate-800 mt-16">
+  <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
+    <div className="grid grid-cols-1 md:grid-cols-3 gap-8 mb-8">
+      <div className="flex flex-col gap-2">
+        <div className="flex items-center gap-2">
+          <TrendingUp className="w-6 h-6 text-purple-500" strokeWidth={2.5} />
+          <span className="text-lg font-extrabold tracking-tight text-white">DraftRoom</span>
+        </div>
+        <p className="text-sm text-slate-400 italic">Evaluate Talent with Precision</p>
+      </div>
+      <div className="flex flex-col gap-3">
+        <p className="text-xs font-semibold text-slate-500 uppercase tracking-wider">Built With</p>
+        <div className="flex flex-wrap gap-2">
+          {['React', 'TypeScript', 'FastAPI', 'Python', 'nba_api', 'Tailwind CSS', 'Recharts'].map(tech => (
+            <span key={tech} className="px-2 py-1 rounded bg-slate-800 text-slate-300 text-xs border border-slate-700">{tech}</span>
+          ))}
+        </div>
+      </div>
+      <div className="flex flex-col gap-3">
+        <a href="https://github.com/ashadsmh" target="_blank" rel="noopener noreferrer" className="text-slate-400 hover:text-slate-200 transition-colors text-sm flex items-center gap-1">
+          GitHub — ashadsmh <ChevronRight className="w-3 h-3" />
+        </a>
+        <p className="text-xs text-slate-500">Powered by NBA.com data via nba_api</p>
+      </div>
+    </div>
+    <div className="border-t border-slate-800 pt-6">
+      <p className="text-center text-xs text-slate-500">© 2026 DraftRoom. Built by Ashad</p>
+    </div>
+  </div>
+</footer>
     </div>
   );
 }
