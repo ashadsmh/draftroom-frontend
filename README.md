@@ -1,16 +1,37 @@
-# React + Vite
+# DraftRoom 🏀
 
-This template provides a minimal setup to get React working in Vite with HMR and some ESLint rules.
+An NBA player analytics tool that combines real stats with predictive performance indicators.
 
-Currently, two official plugins are available:
+**Live Demo:** https://draftroom-frontend.vercel.app
 
-- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react) uses [Oxc](https://oxc.rs)
-- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react-swc) uses [SWC](https://swc.rs/)
+## ⚠️ Important Note
+The backend is hosted on Render's free tier and **spins down after 15 minutes of inactivity**. When you first visit the site, please allow **30-60 seconds** for the backend to wake up before searching for players. After the first request everything loads normally.
 
-## React Compiler
+## Features
+- **Live NBA Player Search** — search any active NBA player by name
+- **DraftRoom Score** — proprietary efficiency rating (0-100) combining True Shooting %, playmaking, defense, foul pressure, and volume efficiency
+- **Season Form** — last 10 games averaged with real stats: PTS, AST, REB, FG%, STL, BLK
+- **5-Game Trajectory** — EWMA predictive model with opponent-adjusted projections and confidence scores
+- **Player Comparison** — compare up to 3 players side by side with radar charts
+- **Watchlist** — bookmark players and persist them across sessions
 
-The React Compiler is not enabled on this template because of its impact on dev & build performances. To add it, see [this documentation](https://react.dev/learn/react-compiler/installation).
+## Tech Stack
+- **Frontend:** React, TypeScript, Vite, Tailwind CSS, Recharts
+- **Backend:** FastAPI, Python, nba_api
+- **Deployment:** Vercel (frontend) + Render (backend)
 
-## Expanding the ESLint configuration
+## Local Development
+```bash
+# Frontend
+cd draftroom-frontend
+npm install
+npm run dev
 
-If you are developing a production application, we recommend using TypeScript with type-aware lint rules enabled. Check out the [TS template](https://github.com/vitejs/vite/tree/main/packages/create-vite/template-react-ts) for information on how to integrate TypeScript and [`typescript-eslint`](https://typescript-eslint.io) in your project.
+# Backend
+cd draftroom-backend
+pip install fastapi uvicorn nba_api
+python main.py
+```
+
+## Built By
+Ashad — [GitHub](https://github.com/ashadsmh)
