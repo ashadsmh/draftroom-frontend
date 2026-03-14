@@ -11,7 +11,7 @@ export interface NbaPlayer {
   };
 }
 
-const BASE_URL = 'http://localhost:8000';
+const BASE_URL = (import.meta as any).env?.VITE_API_URL || 'https://draftroom-backend-1gql.onrender.com';
 
 const handleResponse = async (response: Response) => {
   if (!response.ok) {
@@ -35,11 +35,19 @@ export const searchPlayers = async (query: string, signal?: AbortSignal): Promis
     first_name: player.first_name,
     last_name: player.last_name,
     is_active: player.is_active,
-    position: '',
+    position: 'N/A',
     team: {
       full_name: 'NBA'
     }
   }));
+};
+
+/**
+ * @deprecated The BallDontLie free tier does not support the season averages endpoint.
+ * Use getComputedAverages instead.
+ */
+export const getSeasonAverages = async (playerId: number) => {
+  return null;
 };
 
 export const getPlayerInfo = async (playerId: number) => {
@@ -50,14 +58,6 @@ export const getPlayerInfo = async (playerId: number) => {
   } catch (error) {
     return null;
   }
-};
-
-/**
- * @deprecated The BallDontLie free tier does not support the season averages endpoint.
- * Use getComputedAverages instead.
- */
-export const getSeasonAverages = async (playerId: number) => {
-  return null;
 };
 
 export interface ComputedStats {
@@ -103,7 +103,7 @@ export const getComputedAverages = async (playerId: number): Promise<ComputedSta
       pts: Number((pts / count).toFixed(1)),
       ast: Number((ast / count).toFixed(1)),
       reb: Number((reb / count).toFixed(1)),
-      fg_pct: fg_pct / count,
+      fg_pct: Number((fg_pct / count).toFixed(1)),
       stl: Number((stl / count).toFixed(1)),
       blk: Number((blk / count).toFixed(1)),
       count,
