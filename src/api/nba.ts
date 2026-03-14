@@ -103,7 +103,7 @@ export const getComputedAverages = async (playerId: number): Promise<ComputedSta
       pts: Number((pts / count).toFixed(1)),
       ast: Number((ast / count).toFixed(1)),
       reb: Number((reb / count).toFixed(1)),
-      fg_pct: Number((fg_pct / count).toFixed(1)),
+      fg_pct: Number((fg_pct / count).toFixed(3)),
       stl: Number((stl / count).toFixed(1)),
       blk: Number((blk / count).toFixed(1)),
       count,
