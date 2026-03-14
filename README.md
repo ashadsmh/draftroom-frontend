@@ -1,9 +1,8 @@
 # DraftRoom 🏀
 ## Preview
-![Homepage](docs/HomePage.png)
 
-![Player Analysis](docs/SearchResult.png)
-
+![Homepage](HomePage.png)
+![Player Analysis](SearchResult.png)
 
 An NBA player analytics tool that combines real stats with predictive performance indicators.
 
