@@ -1,4 +1,7 @@
 # DraftRoom 🏀
+## Preview
+
+![Homepage](docs/Home%20Page.png)
 
 An NBA player analytics tool that combines real stats with predictive performance indicators.
 
@@ -14,6 +17,8 @@ The backend is hosted on Render's free tier and **spins down after 15 minutes of
 - **5-Game Trajectory** — EWMA predictive model with opponent-adjusted projections and confidence scores
 - **Player Comparison** — compare up to 3 players side by side with radar charts
 - **Watchlist** — bookmark players and persist them across sessions
+
+![Player Analysis](docs/Search%20Result.png)
 
 ## Tech Stack
 - **Frontend:** React, TypeScript, Vite, Tailwind CSS, Recharts
