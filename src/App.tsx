@@ -225,15 +225,7 @@ export default function App() {
 
   const [watchlist, setWatchlist] = useState<Player[]>([]);
 
-  const [hasShownWelcome, setHasShownWelcome] = useState(false);
-  const [isWelcomeModalOpen, setIsWelcomeModalOpen] = useState(false);
-
-  useEffect(() => {
-    if (isSearching && !hasShownWelcome) {
-      setHasShownWelcome(true);
-      setIsWelcomeModalOpen(true);
-    }
-  }, [isSearching, hasShownWelcome]);
+  const [isWelcomeModalOpen, setIsWelcomeModalOpen] = useState(true);
 
   useEffect(() => {
     const stored = localStorage.getItem('draftroom_watchlist');
