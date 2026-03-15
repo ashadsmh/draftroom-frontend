@@ -596,11 +596,21 @@ export default function App() {
 
       {/* Navigation */}
       <nav className="sticky top-0 z-50 bg-slate-950/80 backdrop-blur-md border-b border-slate-800">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between">
           <button onClick={handleResetApp} className="flex items-center gap-2 cursor-pointer border-none bg-transparent p-0">
             <TrendingUp className="w-8 h-8 text-purple-500" strokeWidth={2.5} />
             <span className="text-xl font-extrabold tracking-tight text-white">DraftRoom</span>
           </button>
+          <div className="relative group">
+            <button className="text-slate-300 hover:text-white font-medium px-4 py-2 rounded-lg transition-colors">
+              Login
+            </button>
+            <div className="absolute top-full mt-2 left-1/2 -translate-x-1/2 bg-slate-800 text-slate-300 text-xs font-medium px-3 py-1.5 rounded-lg border border-slate-700 whitespace-nowrap shadow-lg opacity-0 group-hover:opacity-100 transition-opacity duration-200 pointer-events-none">
+              Coming Soon
+              <div className="absolute -top-1.5 left-1/2 -translate-x-1/2 border-l-4 border-r-4 border-b-4 border-transparent border-b-slate-700"></div>
+              <div className="absolute -top-1 left-1/2 -translate-x-1/2 border-l-4 border-r-4 border-b-4 border-transparent border-b-slate-800"></div>
+            </div>
+          </div>
         </div>
       </nav>
 
