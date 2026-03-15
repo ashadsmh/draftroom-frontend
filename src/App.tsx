@@ -225,6 +225,16 @@ export default function App() {
 
   const [watchlist, setWatchlist] = useState<Player[]>([]);
 
+  const [hasShownWelcome, setHasShownWelcome] = useState(false);
+  const [isWelcomeModalOpen, setIsWelcomeModalOpen] = useState(false);
+
+  useEffect(() => {
+    if (isSearching && !hasShownWelcome) {
+      setHasShownWelcome(true);
+      setIsWelcomeModalOpen(true);
+    }
+  }, [isSearching, hasShownWelcome]);
+
   useEffect(() => {
     const stored = localStorage.getItem('draftroom_watchlist');
     if (stored) {
@@ -575,6 +585,23 @@ export default function App() {
 
   return (
     <div className="min-h-screen bg-slate-950 selection:bg-indigo-500/30">
+      {isWelcomeModalOpen && (
+        <div className="fixed inset-0 bg-slate-950/80 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+          <div className="bg-slate-900 border border-slate-800 rounded-2xl p-8 max-w-md w-full shadow-2xl shadow-slate-900/50 flex flex-col items-center text-center">
+            <h2 className="text-2xl font-bold text-white mb-4">Welcome to DraftRoom</h2>
+            <p className="text-slate-400 mb-8">
+              Our backend runs on a free server that takes up to 60 seconds to wake up on your first request. Search results and player analysis will load shortly — thank you for your patience.
+            </p>
+            <button
+              onClick={() => setIsWelcomeModalOpen(false)}
+              className="bg-purple-600 hover:bg-purple-700 text-white font-medium py-2.5 px-6 rounded-xl transition-colors w-full"
+            >
+              Got it
+            </button>
+          </div>
+        </div>
+      )}
+
       {/* Navigation */}
       <nav className="sticky top-0 z-50 bg-slate-950/80 backdrop-blur-md border-b border-slate-800">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center">
