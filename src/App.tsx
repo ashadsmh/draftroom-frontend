@@ -221,6 +221,7 @@ export default function App() {
   const [comparisonMode, setComparisonMode] = useState(false);
   const [comparisonPlayers, setComparisonPlayers] = useState<ComparisonPlayer[]>([]);
   const [isAddingToComparison, setIsAddingToComparison] = useState(false);
+  const [pendingPlayer, setPendingPlayer] = useState<NbaPlayer | null>(null);
   const searchInputRef = useRef<HTMLInputElement>(null);
 
   const [watchlist, setWatchlist] = useState<Player[]>([]);
@@ -334,7 +335,7 @@ export default function App() {
       { id: '1628983', name: 'Shai Gilgeous-Alexander', position: 'PG', team: 'OKC', score: null, stats: null, trend: null },
       { id: '1641705', name: 'Victor Wembanyama', position: 'C', team: 'SAS', score: null, stats: null, trend: null },
       { id: '203507', name: 'Giannis Antetokounmpo', position: 'PF', team: 'MIL', score: null, stats: null, trend: null },
-      { id: '1629029', name: 'Luka Doncic', position: 'PG', team: 'LAL', score: null, stats: null, trend: null },
+      { id: '1629029', name: 'Luka Doncic', position: 'PG', team: 'DAL', score: null, stats: null, trend: null },
       { id: '1630162', name: 'Anthony Edwards', position: 'SG', team: 'MIN', score: null, stats: null, trend: null }
     ];
 
@@ -539,7 +540,13 @@ export default function App() {
     });
   };
 
-  const handlePlayerSelect = (player: NbaPlayer) => {
+  const handlePlayerSelect = (player: NbaPlayer, force: boolean = false) => {
+    if (!force && comparisonMode && comparisonPlayers.length > 1 && !isAddingToComparison) {
+      setPendingPlayer(player);
+      setSearchResults([]);
+      return;
+    }
+
     if (isAddingToComparison) {
       if (comparisonPlayers.length < 3 && !comparisonPlayers.some(p => p.player.id === player.id)) {
         setComparisonPlayers(prev => [
@@ -681,6 +688,36 @@ export default function App() {
             {searchError && (
               <div className="absolute top-full left-0 right-0 mt-2 text-red-400 text-sm text-center">
                 {searchError}
+              </div>
+            )}
+
+            {/* Pending Player Prompt */}
+            {pendingPlayer && (
+              <div className="absolute top-full left-0 right-0 mt-2 bg-slate-900 border border-slate-800 rounded-xl shadow-2xl p-4 z-50 flex items-center justify-between">
+                <span className="text-slate-300 text-sm font-medium">This will end your current comparison. Continue?</span>
+                <div className="flex items-center gap-3">
+                  <button
+                    onClick={() => {
+                      setPendingPlayer(null);
+                      setSearchQuery('');
+                    }}
+                    className="px-3 py-1.5 text-sm font-medium text-slate-300 bg-slate-800 hover:bg-slate-700 rounded-lg transition-colors"
+                  >
+                    Cancel
+                  </button>
+                  <button
+                    onClick={() => {
+                      const p = pendingPlayer;
+                      setPendingPlayer(null);
+                      setComparisonMode(false);
+                      setComparisonPlayers([]);
+                      handlePlayerSelect(p, true);
+                    }}
+                    className="px-3 py-1.5 text-sm font-medium text-white bg-red-600 hover:bg-red-700 rounded-lg transition-colors"
+                  >
+                    End Comparison
+                  </button>
+                </div>
               </div>
             )}
           </div>
