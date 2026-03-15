@@ -670,11 +670,6 @@ export default function App() {
                     <div>
                       <div className="text-slate-100 font-medium flex items-center gap-2">
                         {player.first_name} {player.last_name}
-                        {player.position && (
-                          <span className="text-xs font-semibold px-2 py-0.5 rounded bg-slate-800 text-slate-300 border border-slate-700">
-                            {abbreviatePosition(player.position)}
-                          </span>
-                        )}
                       </div>
                     </div>
                   </button>
