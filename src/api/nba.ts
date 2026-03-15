@@ -20,6 +20,18 @@ const handleResponse = async (response: Response) => {
   return response.json();
 };
 
+const fetchWithRetry = async (url: string, options?: RequestInit): Promise<Response> => {
+  let response = await fetch(url, options);
+  if (response.status === 500) {
+    await new Promise(resolve => setTimeout(resolve, 3000));
+    response = await fetch(url, options);
+  }
+  if (response.status === 500) {
+    throw new Error(`API error: ${response.status} ${response.statusText}`);
+  }
+  return response;
+};
+
 export const searchPlayers = async (query: string, signal?: AbortSignal): Promise<NbaPlayer[]> => {
   if (!query) return [];
   const response = await fetch(`${BASE_URL}/players/search?query=${encodeURIComponent(query)}`, {
@@ -115,7 +127,7 @@ export const getComputedAverages = async (playerId: number): Promise<ComputedSta
 };
 
 export const getRecentGames = async (playerId: number) => {
-  const response = await fetch(`${BASE_URL}/players/${playerId}/gamelog`);
+  const response = await fetchWithRetry(`${BASE_URL}/players/${playerId}/gamelog`);
   const data = await handleResponse(response);
   return data?.PlayerGameLog ?? [];
 };
@@ -150,7 +162,7 @@ export interface DraftRoomScoreResponse {
 
 export const getDraftRoomScore = async (playerId: number): Promise<DraftRoomScoreResponse | null> => {
   try {
-    const response = await fetch(`${BASE_URL}/players/${playerId}/draftroom-score`);
+    const response = await fetchWithRetry(`${BASE_URL}/players/${playerId}/draftroom-score`);
     if (!response.ok) return null;
     return await response.json();
   } catch (error) {
@@ -173,7 +185,7 @@ export interface TrajectoryResponse {
 
 export const getTrajectory = async (playerId: number): Promise<TrajectoryResponse | null> => {
   try {
-    const response = await fetch(`${BASE_URL}/players/${playerId}/trajectory`);
+    const response = await fetchWithRetry(`${BASE_URL}/players/${playerId}/trajectory`);
     if (!response.ok) return null;
     return await response.json();
   } catch (error) {
