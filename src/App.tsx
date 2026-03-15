@@ -334,7 +334,7 @@ export default function App() {
       { id: '1628983', name: 'Shai Gilgeous-Alexander', position: 'PG', team: 'OKC', score: null, stats: null, trend: null },
       { id: '1641705', name: 'Victor Wembanyama', position: 'C', team: 'SAS', score: null, stats: null, trend: null },
       { id: '203507', name: 'Giannis Antetokounmpo', position: 'PF', team: 'MIL', score: null, stats: null, trend: null },
-      { id: '1629029', name: 'Luka Doncic', position: 'PG', team: 'DAL', score: null, stats: null, trend: null },
+      { id: '1629029', name: 'Luka Doncic', position: 'PG', team: 'LAL', score: null, stats: null, trend: null },
       { id: '1630162', name: 'Anthony Edwards', position: 'SG', team: 'MIN', score: null, stats: null, trend: null }
     ];
 
