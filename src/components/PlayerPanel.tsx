@@ -1,8 +1,9 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import { Loader2, TrendingUp, TrendingDown, Minus, Bookmark, X } from 'lucide-react';
-import { RadarChart, Radar, PolarGrid, PolarAngleAxis, ResponsiveContainer } from 'recharts';
+import { RadarChart, Radar, PolarGrid, PolarAngleAxis, ResponsiveContainer, LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ReferenceLine } from 'recharts';
 import { abbreviatePosition } from './PlayerCard';
 import { NbaPlayer, DraftRoomScoreResponse, TrajectoryResponse, getScoreColor, getScoreBg, getCareerTier } from '../types';
+import { getDrHistory, DrHistoryEntry } from '../api/nba';
 
 interface PlayerPanelProps {
   selectedPlayer: NbaPlayer;
@@ -31,6 +32,28 @@ const PlayerPanel: React.FC<PlayerPanelProps> = ({
   onStartComparison,
   onClose
 }) => {
+  const [drHistory, setDrHistory] = useState<DrHistoryEntry[]>([]);
+  const [isLoadingHistory, setIsLoadingHistory] = useState(false);
+  const [historyError, setHistoryError] = useState<string | null>(null);
+  const [selectedRange, setSelectedRange] = useState<'10' | '20' | '40' | 'season'>('20');
+
+  useEffect(() => {
+    if (!selectedPlayer) return;
+    setIsLoadingHistory(true);
+    setHistoryError(null);
+    setDrHistory([]);
+    getDrHistory(selectedPlayer.id, selectedRange)
+      .then(data => {
+        if (!data || data.length === 0) {
+          setHistoryError('History unavailable');
+        } else {
+          setDrHistory(data);
+        }
+      })
+      .catch(() => setHistoryError('History unavailable'))
+      .finally(() => setIsLoadingHistory(false));
+  }, [selectedPlayer, selectedRange]);
+
   return (
     <div className="bg-slate-900 border border-slate-800 rounded-2xl p-8 flex flex-col shadow-xl shadow-slate-900/50">
       <div className="flex justify-between items-start w-full mb-6">
@@ -151,6 +174,96 @@ const PlayerPanel: React.FC<PlayerPanelProps> = ({
               No Season Form — Last 10 Games available.
             </div>
           )}
+
+          <div className="mt-8">
+            <div className="flex items-center justify-between mb-3">
+              <div className="text-sm font-semibold text-slate-400 uppercase tracking-wider">
+                DR Score History
+              </div>
+              <div className="flex gap-1">
+                {(['10', '20', '40', 'season'] as const).map(range => (
+                  <button
+                    key={range}
+                    onClick={() => setSelectedRange(range)}
+                    className={`px-2.5 py-1 text-xs font-bold rounded-lg transition-colors ${
+                      selectedRange === range
+                        ? 'bg-purple-600 text-white'
+                        : 'bg-slate-800 text-slate-400 hover:text-slate-200 hover:bg-slate-700'
+                    }`}
+                  >
+                    {range === 'season' ? 'Season' : `L${range}`}
+                  </button>
+                ))}
+              </div>
+            </div>
+
+            {isLoadingHistory ? (
+              <div className="flex items-center gap-3 text-slate-400 py-4">
+                <Loader2 className="w-5 h-5 animate-spin text-purple-500" />
+                <span>Loading DR Score history...</span>
+              </div>
+            ) : historyError ? (
+              <div className="text-slate-500 italic py-4 bg-slate-950/30 rounded-xl px-4 border border-slate-800/30">
+                {historyError}
+              </div>
+            ) : drHistory.length > 0 ? (
+              <div className="bg-slate-950/50 rounded-xl p-4 border border-slate-800/50">
+                <ResponsiveContainer width="100%" height={200}>
+                  <LineChart data={drHistory} margin={{ top: 5, right: 10, left: -20, bottom: 5 }}>
+                    <CartesianGrid strokeDasharray="3 3" stroke="#1e293b" />
+                    <XAxis
+                      dataKey="opponent"
+                      tick={{ fill: '#64748b', fontSize: 10 }}
+                      tickLine={false}
+                      axisLine={false}
+                    />
+                    <YAxis
+                      domain={[40, 100]}
+                      tick={{ fill: '#64748b', fontSize: 10 }}
+                      tickLine={false}
+                      axisLine={false}
+                    />
+                    <Tooltip
+                      contentStyle={{ backgroundColor: '#0f172a', border: '1px solid #1e293b', borderRadius: '8px' }}
+                      labelStyle={{ color: '#94a3b8', fontSize: 11 }}
+                      formatter={(value: any, name: any) => [value, 'DR Score']}
+                      labelFormatter={(label: any, payload: any) => {
+                        if (payload && payload[0]) {
+                          const d = payload[0].payload;
+                          return `vs ${d.opponent} · ${d.date}`;
+                        }
+                        return label;
+                      }}
+                    />
+                    <ReferenceLine y={70} stroke="#334155" strokeDasharray="4 4" />
+                    <ReferenceLine y={50} stroke="#334155" strokeDasharray="4 4" />
+                    <Line
+                      type="monotone"
+                      dataKey="dr_score"
+                      stroke="rgb(168,85,247)"
+                      strokeWidth={2}
+                      dot={{ fill: 'rgb(168,85,247)', r: 3, strokeWidth: 0 }}
+                      activeDot={{ r: 5, fill: 'rgb(168,85,247)' }}
+                    />
+                  </LineChart>
+                </ResponsiveContainer>
+                <div className="flex items-center gap-4 mt-2 justify-end">
+                  <div className="flex items-center gap-1.5 text-xs text-slate-500">
+                    <div className="w-3 h-0.5 bg-slate-700 border-dashed"></div>
+                    <span>70 Elite</span>
+                  </div>
+                  <div className="flex items-center gap-1.5 text-xs text-slate-500">
+                    <div className="w-3 h-0.5 bg-slate-700"></div>
+                    <span>50 Average</span>
+                  </div>
+                </div>
+              </div>
+            ) : (
+              <div className="text-slate-500 italic py-4 bg-slate-950/30 rounded-xl px-4 border border-slate-800/30">
+                No history available.
+              </div>
+            )}
+          </div>
 
           {/* 5-Game Projection Section */}
           <div className="mt-8">

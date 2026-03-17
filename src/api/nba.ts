@@ -193,6 +193,26 @@ export const getTrajectory = async (playerId: number): Promise<TrajectoryRespons
   }
 };
 
+export interface DrHistoryEntry {
+  game_number: number;
+  date: string;
+  opponent: string;
+  dr_score: number;
+  pts: number;
+  ast: number;
+  reb: number;
+}
+
+export const getDrHistory = async (playerId: number, games: '10' | '20' | '40' | 'season' = '20'): Promise<DrHistoryEntry[]> => {
+  try {
+    const response = await fetchWithRetry(`${BASE_URL}/players/${playerId}/dr-history?games=${games}`);
+    if (!response.ok) return [];
+    return await response.json();
+  } catch (error) {
+    return [];
+  }
+};
+
 export interface BatchPlayer {
   id: number;
   name: string;
