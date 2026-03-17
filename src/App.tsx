@@ -34,6 +34,13 @@ interface Player {
   trend: 'up' | 'down' | 'stable' | null;
 }
 
+interface SavedTeam {
+  id: number;
+  timestamp: number;
+  slots: Record<string, TeamSlot | null>;
+  scores: { teamScore: number; offRating: number; defRating: number };
+}
+
 const getScoreColor = (score: number) => {
   if (score >= 70) return 'text-emerald-400';
   if (score >= 50) return 'text-amber-400';
@@ -247,6 +254,22 @@ export default function App() {
   const [teamResult, setTeamResult] = useState<{ teamScore: number; offRating: number; defRating: number } | null>(null);
   const [mismatchWarning, setMismatchWarning] = useState<{ player: NbaPlayer; slot: string; data: TeamSlot } | null>(null);
   const [mismatchConfirmed, setMismatchConfirmed] = useState(false);
+  const [savedTeams, setSavedTeams] = useState<SavedTeam[]>([]);
+
+  useEffect(() => {
+    const stored = localStorage.getItem('draftroom_saved_teams');
+    if (stored) {
+      try {
+        setSavedTeams(JSON.parse(stored));
+      } catch (e) {
+        console.error('Failed to parse saved teams from localStorage', e);
+      }
+    }
+  }, []);
+
+  useEffect(() => {
+    localStorage.setItem('draftroom_saved_teams', JSON.stringify(savedTeams));
+  }, [savedTeams]);
 
   useEffect(() => {
     const stored = localStorage.getItem('draftroom_watchlist');
@@ -991,17 +1014,34 @@ export default function App() {
               <div className="bg-slate-900 border border-slate-800 rounded-2xl p-6 shadow-xl shadow-slate-900/50">
                 <div className="flex items-center justify-between mb-6">
                   <h2 className="text-xl font-bold text-white">Team Analysis</h2>
-                  <button 
-                    onClick={() => {
-                      setTeamSlots({ PG: null, SG: null, SF: null, PF: null, C: null });
-                      setCurrentSlot('PG');
-                      setTeamResult(null);
-                    }}
-                    className="text-sm text-slate-400 hover:text-white transition-colors flex items-center gap-2"
-                  >
-                    <RefreshCw className="w-4 h-4" />
-                    Reset Team
-                  </button>
+                  <div className="flex items-center gap-4">
+                    <button 
+                      onClick={() => {
+                        const newTeam: SavedTeam = {
+                          id: Date.now(),
+                          timestamp: Date.now(),
+                          slots: teamSlots,
+                          scores: teamResult
+                        };
+                        setSavedTeams(prev => [newTeam, ...prev]);
+                      }}
+                      className="text-sm bg-purple-600 hover:bg-purple-500 text-white px-4 py-2 rounded-xl font-bold transition-colors flex items-center gap-2"
+                    >
+                      <Bookmark className="w-4 h-4" />
+                      Save Team
+                    </button>
+                    <button 
+                      onClick={() => {
+                        setTeamSlots({ PG: null, SG: null, SF: null, PF: null, C: null });
+                        setCurrentSlot('PG');
+                        setTeamResult(null);
+                      }}
+                      className="text-sm text-slate-400 hover:text-white transition-colors flex items-center gap-2"
+                    >
+                      <RefreshCw className="w-4 h-4" />
+                      Reset Team
+                    </button>
+                  </div>
                 </div>
                 <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
                   <div className="bg-slate-950 border border-purple-500/20 rounded-xl p-6 flex flex-col items-center justify-center text-center">
@@ -1444,6 +1484,112 @@ export default function App() {
           </div>
         )}
 
+        {/* My Watchlist */}
+        {!teamBuilderMode && watchlist.length > 0 && (
+          <div className="mb-16">
+            <div className="flex items-center justify-between mb-6">
+              <div className="flex items-center gap-3">
+                <div className="p-2 bg-indigo-500/10 rounded-lg border border-indigo-500/20">
+                  <Bookmark className="w-5 h-5 text-indigo-400" fill="currentColor" />
+                </div>
+                <h2 className="text-2xl font-bold text-slate-100">My Watchlist</h2>
+              </div>
+              <button 
+                onClick={() => setWatchlist([])}
+                className="text-sm font-medium text-slate-400 hover:text-slate-200 transition-colors px-3 py-1.5 rounded-lg hover:bg-slate-800"
+              >
+                Clear All
+              </button>
+            </div>
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+              {watchlist.map(player => (
+                <PlayerCard 
+                  key={player.id} 
+                  player={player} 
+                  onSelect={handleSelectPlayerCard} 
+                  isBookmarked={true}
+                  onToggleBookmark={toggleBookmark}
+                  showBookmark={true}
+                />
+              ))}
+            </div>
+          </div>
+        )}
+
+        {/* My Teams */}
+        {!teamBuilderMode && savedTeams.length > 0 && (
+          <div className="mb-16">
+            <div className="flex items-center justify-between mb-6">
+              <div className="flex items-center gap-3">
+                <div className="p-2 bg-purple-500/10 rounded-lg border border-purple-500/20">
+                  <Bookmark className="w-5 h-5 text-purple-400" fill="currentColor" />
+                </div>
+                <h2 className="text-2xl font-bold text-slate-100">My Teams</h2>
+              </div>
+              <button 
+                onClick={() => setSavedTeams([])}
+                className="text-sm font-medium text-slate-400 hover:text-slate-200 transition-colors px-3 py-1.5 rounded-lg hover:bg-slate-800"
+              >
+                Clear All
+              </button>
+            </div>
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+              {savedTeams.map(team => (
+                <div key={team.id} className="bg-slate-900 border border-slate-800 rounded-2xl p-5 shadow-xl shadow-slate-900/50 relative group">
+                  <button 
+                    onClick={() => setSavedTeams(prev => prev.filter(t => t.id !== team.id))}
+                    className="absolute top-3 right-3 text-slate-500 hover:text-rose-400 transition-colors opacity-0 group-hover:opacity-100"
+                  >
+                    <X className="w-4 h-4" />
+                  </button>
+                  <div className="text-xs text-slate-500 mb-4">{new Date(team.timestamp).toLocaleDateString()}</div>
+                  <div className="space-y-2 mb-6">
+                    {['PG', 'SG', 'SF', 'PF', 'C'].map(slot => {
+                      const data = team.slots[slot];
+                      return (
+                        <div key={slot} className="flex items-center justify-between text-sm">
+                          <div className="flex items-center gap-2">
+                            <span className="text-xs font-bold text-slate-500 w-6">{slot}</span>
+                            <span className="text-slate-300 font-medium">{data ? `${data.player.first_name} ${data.player.last_name}` : 'Empty'}</span>
+                          </div>
+                          {data && (
+                            <span className="text-xs font-bold text-slate-500">{data.player.position}</span>
+                          )}
+                        </div>
+                      );
+                    })}
+                  </div>
+                  <div className="flex flex-wrap gap-2 mb-6">
+                    <div className="px-2.5 py-1 rounded-full bg-purple-500/10 border border-purple-500/20 text-purple-400 text-xs font-semibold">
+                      DR: {team.scores.teamScore.toFixed(1)}
+                    </div>
+                    <div className="px-2.5 py-1 rounded-full bg-emerald-500/10 border border-emerald-500/20 text-emerald-400 text-xs font-semibold">
+                      OFF: {team.scores.offRating.toFixed(1)}
+                    </div>
+                    <div className="px-2.5 py-1 rounded-full bg-blue-500/10 border border-blue-500/20 text-blue-400 text-xs font-semibold">
+                      DEF: {team.scores.defRating.toFixed(1)}
+                    </div>
+                  </div>
+                  <div className="flex justify-end">
+                    <button
+                      onClick={() => {
+                        setTeamBuilderMode(true);
+                        setTeamSlots(team.slots);
+                        setTeamResult(team.scores);
+                        window.scrollTo({ top: 0, behavior: 'smooth' });
+                      }}
+                      className="flex items-center gap-1 text-sm font-bold text-purple-400 hover:text-purple-300 transition-colors"
+                    >
+                      Open in Builder
+                      <ChevronRight className="w-4 h-4" />
+                    </button>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
+
         {/* Breakout Alerts */}
         {!teamBuilderMode && (
           <div className="mb-16">
@@ -1488,37 +1634,7 @@ export default function App() {
           </div>
         )}
 
-        {/* My Watchlist */}
-        {!teamBuilderMode && watchlist.length > 0 && (
-          <div className="mb-16">
-            <div className="flex items-center justify-between mb-6">
-              <div className="flex items-center gap-3">
-                <div className="p-2 bg-indigo-500/10 rounded-lg border border-indigo-500/20">
-                  <Bookmark className="w-5 h-5 text-indigo-400" fill="currentColor" />
-                </div>
-                <h2 className="text-2xl font-bold text-slate-100">My Watchlist</h2>
-              </div>
-              <button 
-                onClick={() => setWatchlist([])}
-                className="text-sm font-medium text-slate-400 hover:text-slate-200 transition-colors px-3 py-1.5 rounded-lg hover:bg-slate-800"
-              >
-                Clear All
-              </button>
-            </div>
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-              {watchlist.map(player => (
-                <PlayerCard 
-                  key={player.id} 
-                  player={player} 
-                  onSelect={handleSelectPlayerCard} 
-                  isBookmarked={true}
-                  onToggleBookmark={toggleBookmark}
-                  showBookmark={true}
-                />
-              ))}
-            </div>
-          </div>
-        )}
+
 
         {/* Top Prospects Grid */}
         {!teamBuilderMode && (
