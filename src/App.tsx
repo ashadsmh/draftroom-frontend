@@ -675,11 +675,11 @@ export default function App() {
         
         const pos = updatedPlayer.position || '';
         let isMatch = false;
-        if (currentSlot === 'PG' && (pos.includes('PG') || pos === 'G')) isMatch = true;
-        else if (currentSlot === 'SG' && (pos.includes('SG') || pos === 'G')) isMatch = true;
-        else if (currentSlot === 'SF' && (pos.includes('SF') || pos === 'F')) isMatch = true;
-        else if (currentSlot === 'PF' && (pos.includes('PF') || pos === 'F')) isMatch = true;
-        else if (currentSlot === 'C' && pos.includes('C')) isMatch = true;
+        if (currentSlot === 'PG' && (pos.includes('G') || pos === 'PG')) isMatch = true;
+        else if (currentSlot === 'SG' && (pos.includes('G') || pos === 'SG')) isMatch = true;
+        else if (currentSlot === 'SF' && (pos.includes('F') || pos === 'SF' || pos === 'F-C' || pos === 'C-F')) isMatch = true;
+        else if (currentSlot === 'PF' && (pos.includes('F') || pos === 'PF' || pos === 'F-C' || pos === 'C-F')) isMatch = true;
+        else if (currentSlot === 'C' && (pos.includes('C') || pos === 'C' || pos === 'F-C' || pos === 'C-F')) isMatch = true;
         
         if (!isMatch) {
           setMismatchWarning({ player: updatedPlayer, slot: currentSlot, data: slotData });
@@ -944,11 +944,22 @@ export default function App() {
                   <div 
                     key={slot}
                     onClick={() => setCurrentSlot(slot)}
-                    className={`bg-slate-900 border rounded-xl p-4 cursor-pointer transition-all ${isActive ? 'border-purple-500 shadow-[0_0_15px_rgba(168,85,247,0.2)]' : 'border-slate-800 hover:border-slate-700'}`}
+                    className={`bg-slate-900 border rounded-xl p-4 cursor-pointer transition-all relative ${isActive ? 'border-purple-500 shadow-[0_0_15px_rgba(168,85,247,0.2)]' : 'border-slate-800 hover:border-slate-700'}`}
                   >
                     <div className="text-xs font-bold text-slate-500 mb-2">{slot}</div>
                     {data ? (
                       <div className="flex flex-col items-center text-center">
+                        <button
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            setTeamSlots(prev => ({ ...prev, [slot]: null }));
+                            setCurrentSlot(slot);
+                            setTeamResult(null);
+                          }}
+                          className="absolute top-2 right-2 text-slate-500 hover:text-rose-400 transition-colors"
+                        >
+                          <X className="w-4 h-4" />
+                        </button>
                         <div className="w-12 h-12 rounded-full bg-slate-800 overflow-hidden mb-2 border border-slate-700">
                           <img 
                             src={`https://cdn.nba.com/headshots/nba/latest/260x190/${data.player.id}.png`}
