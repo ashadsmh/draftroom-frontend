@@ -218,7 +218,10 @@ const PlayerPanel: React.FC<PlayerPanelProps> = ({
                       axisLine={false}
                     />
                     <YAxis
-                      domain={[40, 100]}
+                      domain={([dataMin, dataMax]: [number, number]) => {
+                        const padding = Math.max((dataMax - dataMin) * 0.2, 5);
+                        return [Math.max(40, Math.floor(dataMin - padding)), Math.min(100, Math.ceil(dataMax + padding))];
+                      }}
                       tick={{ fill: '#64748b', fontSize: 10 }}
                       tickLine={false}
                       axisLine={false}
