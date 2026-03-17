@@ -39,6 +39,7 @@ interface SavedTeam {
   timestamp: number;
   slots: Record<string, TeamSlot | null>;
   scores: { teamScore: number; offRating: number; defRating: number };
+  name?: string;
 }
 
 const getScoreColor = (score: number) => {
@@ -256,6 +257,9 @@ export default function App() {
   const [mismatchConfirmed, setMismatchConfirmed] = useState(false);
   const [suppressPositionWarnings, setSuppressPositionWarnings] = useState(false);
   const [isTeamSaved, setIsTeamSaved] = useState(false);
+  const [currentTeamId, setCurrentTeamId] = useState<number | null>(null);
+  const [showTeamNameInput, setShowTeamNameInput] = useState(false);
+  const [teamNameInput, setTeamNameInput] = useState('');
   const [savedTeams, setSavedTeams] = useState<SavedTeam[]>([]);
 
   useEffect(() => {
@@ -643,6 +647,8 @@ export default function App() {
     setTeamSlots(prev => {
       const nextSlots = { ...prev, [slot]: data };
       setIsTeamSaved(false);
+      setCurrentTeamId(null);
+      setShowTeamNameInput(false);
       
       const slots = ['PG', 'SG', 'SF', 'PF', 'C'];
       const currentIndex = slots.indexOf(slot);
@@ -753,6 +759,9 @@ export default function App() {
     setCurrentSlot('PG');
     setTeamResult(null);
     setMismatchWarning(null);
+    setIsTeamSaved(false);
+    setCurrentTeamId(null);
+    setShowTeamNameInput(false);
     window.scrollTo({ top: 0, behavior: 'smooth' });
   };
 
@@ -991,6 +1000,8 @@ export default function App() {
                             setCurrentSlot(slot);
                             setTeamResult(null);
                             setIsTeamSaved(false);
+                            setCurrentTeamId(null);
+                            setShowTeamNameInput(false);
                           }}
                           className="absolute top-2 right-2 text-slate-500 hover:text-rose-400 transition-colors"
                         >
@@ -1028,27 +1039,83 @@ export default function App() {
                 <div className="flex items-center justify-between mb-6">
                   <h2 className="text-xl font-bold text-white">Team Analysis</h2>
                   <div className="flex items-center gap-4">
-                    <button 
-                      onClick={() => {
-                        if (isTeamSaved) return;
-                        const newTeam: SavedTeam = {
-                          id: Date.now(),
-                          timestamp: Date.now(),
-                          slots: teamSlots,
-                          scores: teamResult
-                        };
-                        setSavedTeams(prev => [newTeam, ...prev]);
-                        setIsTeamSaved(true);
-                      }}
-                      className={`text-sm px-4 py-2 rounded-xl font-bold transition-colors flex items-center gap-2 ${
-                        isTeamSaved 
-                          ? 'bg-indigo-500/10 text-indigo-400 border border-indigo-500/20' 
-                          : 'bg-purple-600 hover:bg-purple-500 text-white'
-                      }`}
-                    >
-                      <Bookmark className="w-4 h-4" fill={isTeamSaved ? "currentColor" : "none"} />
-                      {isTeamSaved ? 'Team Saved' : 'Save Team'}
-                    </button>
+                    <div className="relative">
+                      <button 
+                        onClick={() => {
+                          if (isTeamSaved) {
+                            if (currentTeamId) {
+                              setSavedTeams(prev => prev.filter(t => t.id !== currentTeamId));
+                            }
+                            setIsTeamSaved(false);
+                            setCurrentTeamId(null);
+                            setShowTeamNameInput(false);
+                          } else {
+                            setShowTeamNameInput(!showTeamNameInput);
+                            if (!showTeamNameInput) {
+                              setTeamNameInput('');
+                            }
+                          }
+                        }}
+                        className={`p-2 rounded-xl transition-colors flex items-center justify-center ${
+                          isTeamSaved 
+                            ? 'bg-indigo-500/10 text-indigo-400 border border-indigo-500/20' 
+                            : 'bg-slate-800 hover:bg-slate-700 text-slate-300 border border-slate-700'
+                        }`}
+                        title={isTeamSaved ? "Unsave Team" : "Save Team"}
+                      >
+                        <Bookmark className="w-5 h-5" fill={isTeamSaved ? "currentColor" : "none"} />
+                      </button>
+                      
+                      {showTeamNameInput && !isTeamSaved && (
+                        <div className="absolute top-full right-0 mt-2 bg-slate-800 border border-slate-700 rounded-xl p-3 shadow-xl z-10 w-64 flex gap-2">
+                          <input
+                            type="text"
+                            placeholder={`Team ${savedTeams.length + 1}`}
+                            value={teamNameInput}
+                            onChange={(e) => setTeamNameInput(e.target.value)}
+                            onKeyDown={(e) => {
+                              if (e.key === 'Enter') {
+                                const finalName = teamNameInput.trim() || `Team ${savedTeams.length + 1}`;
+                                const newId = Date.now();
+                                const newTeam: SavedTeam = {
+                                  id: newId,
+                                  timestamp: Date.now(),
+                                  slots: teamSlots,
+                                  scores: teamResult,
+                                  name: finalName
+                                };
+                                setSavedTeams(prev => [newTeam, ...prev]);
+                                setIsTeamSaved(true);
+                                setCurrentTeamId(newId);
+                                setShowTeamNameInput(false);
+                              }
+                            }}
+                            className="flex-1 bg-slate-900 border border-slate-700 rounded-lg px-3 py-1.5 text-sm text-white focus:outline-none focus:border-purple-500"
+                            autoFocus
+                          />
+                          <button
+                            onClick={() => {
+                              const finalName = teamNameInput.trim() || `Team ${savedTeams.length + 1}`;
+                              const newId = Date.now();
+                              const newTeam: SavedTeam = {
+                                id: newId,
+                                timestamp: Date.now(),
+                                slots: teamSlots,
+                                scores: teamResult,
+                                name: finalName
+                              };
+                              setSavedTeams(prev => [newTeam, ...prev]);
+                              setIsTeamSaved(true);
+                              setCurrentTeamId(newId);
+                              setShowTeamNameInput(false);
+                            }}
+                            className="bg-purple-600 hover:bg-purple-500 text-white px-3 py-1.5 rounded-lg text-sm font-medium transition-colors"
+                          >
+                            Save
+                          </button>
+                        </div>
+                      )}
+                    </div>
                     <button 
                       onClick={() => {
                         setTeamSlots({ PG: null, SG: null, SF: null, PF: null, C: null });
@@ -1056,6 +1123,8 @@ export default function App() {
                         setTeamResult(null);
                         setSuppressPositionWarnings(false);
                         setIsTeamSaved(false);
+                        setCurrentTeamId(null);
+                        setShowTeamNameInput(false);
                       }}
                       className="text-sm text-slate-400 hover:text-white transition-colors flex items-center gap-2"
                     >
@@ -1563,7 +1632,10 @@ export default function App() {
                   >
                     <X className="w-4 h-4" />
                   </button>
-                  <div className="text-xs text-slate-500 mb-4">{new Date(team.timestamp).toLocaleDateString()}</div>
+                  <div className="flex justify-between items-start mb-4">
+                    <div className="text-lg font-bold text-slate-100">{team.name || `Team ${team.id}`}</div>
+                    <div className="text-xs text-slate-500">{new Date(team.timestamp).toLocaleDateString()}</div>
+                  </div>
                   <div className="space-y-2 mb-6">
                     {['PG', 'SG', 'SF', 'PF', 'C'].map(slot => {
                       const data = team.slots[slot];
@@ -1597,6 +1669,8 @@ export default function App() {
                         setTeamBuilderMode(true);
                         setTeamSlots(team.slots);
                         setTeamResult(team.scores);
+                        setIsTeamSaved(true);
+                        setCurrentTeamId(team.id);
                         window.scrollTo({ top: 0, behavior: 'smooth' });
                       }}
                       className="flex items-center gap-1 text-sm font-bold text-purple-400 hover:text-purple-300 transition-colors"
