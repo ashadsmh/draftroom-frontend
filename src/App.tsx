@@ -254,6 +254,8 @@ export default function App() {
   const [teamResult, setTeamResult] = useState<{ teamScore: number; offRating: number; defRating: number } | null>(null);
   const [mismatchWarning, setMismatchWarning] = useState<{ player: NbaPlayer; slot: string; data: TeamSlot } | null>(null);
   const [mismatchConfirmed, setMismatchConfirmed] = useState(false);
+  const [suppressPositionWarnings, setSuppressPositionWarnings] = useState(false);
+  const [isTeamSaved, setIsTeamSaved] = useState(false);
   const [savedTeams, setSavedTeams] = useState<SavedTeam[]>([]);
 
   useEffect(() => {
@@ -640,6 +642,7 @@ export default function App() {
   const fillSlot = (slot: string, data: TeamSlot) => {
     setTeamSlots(prev => {
       const nextSlots = { ...prev, [slot]: data };
+      setIsTeamSaved(false);
       
       const slots = ['PG', 'SG', 'SF', 'PF', 'C'];
       const currentIndex = slots.indexOf(slot);
@@ -704,7 +707,7 @@ export default function App() {
         else if (currentSlot === 'PF' && (pos.includes('F') || pos === 'PF' || pos === 'F-C' || pos === 'C-F')) isMatch = true;
         else if (currentSlot === 'C' && (pos.includes('C') || pos === 'C' || pos === 'F-C' || pos === 'C-F')) isMatch = true;
         
-        if (!isMatch) {
+        if (!isMatch && !suppressPositionWarnings) {
           setMismatchWarning({ player: updatedPlayer, slot: currentSlot, data: slotData });
           setMismatchConfirmed(false);
         } else {
@@ -940,6 +943,15 @@ export default function App() {
                     />
                     I understand, place player out of position
                   </label>
+                  <label className="flex items-center gap-2 text-sm text-amber-200/90 cursor-pointer mt-2">
+                    <input 
+                      type="checkbox" 
+                      checked={suppressPositionWarnings}
+                      onChange={(e) => setSuppressPositionWarnings(e.target.checked)}
+                      className="rounded border-amber-500/30 bg-amber-500/10 text-amber-500 focus:ring-amber-500/50"
+                    />
+                    Don't show position warnings for the rest of this team
+                  </label>
                 </div>
                 <div className="flex gap-3 ml-4">
                   <button 
@@ -978,6 +990,7 @@ export default function App() {
                             setTeamSlots(prev => ({ ...prev, [slot]: null }));
                             setCurrentSlot(slot);
                             setTeamResult(null);
+                            setIsTeamSaved(false);
                           }}
                           className="absolute top-2 right-2 text-slate-500 hover:text-rose-400 transition-colors"
                         >
@@ -1017,6 +1030,7 @@ export default function App() {
                   <div className="flex items-center gap-4">
                     <button 
                       onClick={() => {
+                        if (isTeamSaved) return;
                         const newTeam: SavedTeam = {
                           id: Date.now(),
                           timestamp: Date.now(),
@@ -1024,17 +1038,24 @@ export default function App() {
                           scores: teamResult
                         };
                         setSavedTeams(prev => [newTeam, ...prev]);
+                        setIsTeamSaved(true);
                       }}
-                      className="text-sm bg-purple-600 hover:bg-purple-500 text-white px-4 py-2 rounded-xl font-bold transition-colors flex items-center gap-2"
+                      className={`text-sm px-4 py-2 rounded-xl font-bold transition-colors flex items-center gap-2 ${
+                        isTeamSaved 
+                          ? 'bg-indigo-500/10 text-indigo-400 border border-indigo-500/20' 
+                          : 'bg-purple-600 hover:bg-purple-500 text-white'
+                      }`}
                     >
-                      <Bookmark className="w-4 h-4" />
-                      Save Team
+                      <Bookmark className="w-4 h-4" fill={isTeamSaved ? "currentColor" : "none"} />
+                      {isTeamSaved ? 'Team Saved' : 'Save Team'}
                     </button>
                     <button 
                       onClick={() => {
                         setTeamSlots({ PG: null, SG: null, SF: null, PF: null, C: null });
                         setCurrentSlot('PG');
                         setTeamResult(null);
+                        setSuppressPositionWarnings(false);
+                        setIsTeamSaved(false);
                       }}
                       className="text-sm text-slate-400 hover:text-white transition-colors flex items-center gap-2"
                     >
