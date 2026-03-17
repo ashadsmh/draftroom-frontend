@@ -261,6 +261,8 @@ export default function App() {
   const [showTeamNameInput, setShowTeamNameInput] = useState(false);
   const [teamNameInput, setTeamNameInput] = useState('');
   const [savedTeams, setSavedTeams] = useState<SavedTeam[]>([]);
+  const [suppressTeamDeleteConfirm, setSuppressTeamDeleteConfirm] = useState(false);
+  const [teamToDelete, setTeamToDelete] = useState<number | null>(null);
 
   useEffect(() => {
     const stored = localStorage.getItem('draftroom_saved_teams');
@@ -1067,7 +1069,7 @@ export default function App() {
                       </button>
                       
                       {showTeamNameInput && !isTeamSaved && (
-                        <div className="absolute top-full right-0 mt-2 bg-slate-800 border border-slate-700 rounded-xl p-3 shadow-xl z-10 w-64 flex gap-2">
+                        <div className="absolute top-full right-0 mt-2 bg-slate-800 border border-slate-700 rounded-xl p-4 shadow-xl z-10 w-64 flex flex-col gap-3">
                           <input
                             type="text"
                             placeholder={`Team ${savedTeams.length + 1}`}
@@ -1090,29 +1092,40 @@ export default function App() {
                                 setShowTeamNameInput(false);
                               }
                             }}
-                            className="flex-1 bg-slate-900 border border-slate-700 rounded-lg px-3 py-1.5 text-sm text-white focus:outline-none focus:border-purple-500"
+                            className="w-full bg-slate-900 border border-slate-700 rounded-lg px-3 py-2 text-sm text-white focus:outline-none focus:border-purple-500"
                             autoFocus
                           />
-                          <button
-                            onClick={() => {
-                              const finalName = teamNameInput.trim() || `Team ${savedTeams.length + 1}`;
-                              const newId = Date.now();
-                              const newTeam: SavedTeam = {
-                                id: newId,
-                                timestamp: Date.now(),
-                                slots: teamSlots,
-                                scores: teamResult,
-                                name: finalName
-                              };
-                              setSavedTeams(prev => [newTeam, ...prev]);
-                              setIsTeamSaved(true);
-                              setCurrentTeamId(newId);
-                              setShowTeamNameInput(false);
-                            }}
-                            className="bg-purple-600 hover:bg-purple-500 text-white px-3 py-1.5 rounded-lg text-sm font-medium transition-colors"
-                          >
-                            Save
-                          </button>
+                          <div className="flex gap-2">
+                            <button
+                              onClick={() => {
+                                setShowTeamNameInput(false);
+                                setTeamNameInput('');
+                              }}
+                              className="flex-1 bg-slate-700 hover:bg-slate-600 text-slate-300 px-3 py-2 rounded-lg text-sm font-medium transition-colors"
+                            >
+                              Cancel
+                            </button>
+                            <button
+                              onClick={() => {
+                                const finalName = teamNameInput.trim() || `Team ${savedTeams.length + 1}`;
+                                const newId = Date.now();
+                                const newTeam: SavedTeam = {
+                                  id: newId,
+                                  timestamp: Date.now(),
+                                  slots: teamSlots,
+                                  scores: teamResult,
+                                  name: finalName
+                                };
+                                setSavedTeams(prev => [newTeam, ...prev]);
+                                setIsTeamSaved(true);
+                                setCurrentTeamId(newId);
+                                setShowTeamNameInput(false);
+                              }}
+                              className="flex-1 bg-purple-600 hover:bg-purple-500 text-white px-3 py-2 rounded-lg text-sm font-medium transition-colors"
+                            >
+                              Save
+                            </button>
+                          </div>
                         </div>
                       )}
                     </div>
@@ -1627,11 +1640,49 @@ export default function App() {
               {savedTeams.map(team => (
                 <div key={team.id} className="bg-slate-900 border border-slate-800 rounded-2xl p-5 shadow-xl shadow-slate-900/50 relative group">
                   <button 
-                    onClick={() => setSavedTeams(prev => prev.filter(t => t.id !== team.id))}
-                    className="absolute top-3 right-3 text-slate-500 hover:text-rose-400 transition-colors opacity-0 group-hover:opacity-100"
+                    onClick={() => {
+                      if (suppressTeamDeleteConfirm) {
+                        setSavedTeams(prev => prev.filter(t => t.id !== team.id));
+                      } else {
+                        setTeamToDelete(team.id);
+                      }
+                    }}
+                    className="absolute top-3 right-3 text-slate-500 hover:text-rose-400 transition-colors opacity-0 group-hover:opacity-100 z-20"
                   >
                     <X className="w-4 h-4" />
                   </button>
+                  
+                  {teamToDelete === team.id && (
+                    <div className="absolute inset-0 bg-slate-900/95 backdrop-blur-sm rounded-2xl p-6 flex flex-col items-center justify-center z-30 border border-slate-800">
+                      <div className="text-slate-200 font-medium mb-4">Delete this team?</div>
+                      <div className="flex gap-3 w-full mb-4">
+                        <button
+                          onClick={() => {
+                            setSavedTeams(prev => prev.filter(t => t.id !== team.id));
+                            setTeamToDelete(null);
+                          }}
+                          className="flex-1 bg-rose-500/10 hover:bg-rose-500/20 text-rose-400 border border-rose-500/20 px-3 py-2 rounded-lg text-sm font-medium transition-colors"
+                        >
+                          Yes, delete
+                        </button>
+                        <button
+                          onClick={() => setTeamToDelete(null)}
+                          className="flex-1 bg-slate-800 hover:bg-slate-700 text-slate-300 border border-slate-700 px-3 py-2 rounded-lg text-sm font-medium transition-colors"
+                        >
+                          Cancel
+                        </button>
+                      </div>
+                      <label className="flex items-center gap-2 text-xs text-slate-400 cursor-pointer">
+                        <input
+                          type="checkbox"
+                          checked={suppressTeamDeleteConfirm}
+                          onChange={(e) => setSuppressTeamDeleteConfirm(e.target.checked)}
+                          className="rounded border-slate-700 bg-slate-800 text-purple-500 focus:ring-purple-500/20"
+                        />
+                        Don't show again
+                      </label>
+                    </div>
+                  )}
                   <div className="flex justify-between items-start mb-4">
                     <div className="text-lg font-bold text-slate-100">{team.name || `Team ${team.id}`}</div>
                     <div className="text-xs text-slate-500">{new Date(team.timestamp).toLocaleDateString()}</div>
