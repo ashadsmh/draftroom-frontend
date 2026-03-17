@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef, useMemo } from 'react';
-import { Search, TrendingUp, TrendingDown, Minus, Star, ChevronRight, Loader2, X, Bookmark } from 'lucide-react';
+import { Search, TrendingUp, TrendingDown, Minus, Star, ChevronRight, Loader2, X, Bookmark, AlertTriangle, RefreshCw } from 'lucide-react';
 import { RadarChart, Radar, PolarGrid, PolarAngleAxis, ResponsiveContainer } from 'recharts';
 import { searchPlayers, getComputedAverages, NbaPlayer, getDraftRoomScore, DraftRoomScoreResponse, getTrajectory, TrajectoryResponse, getBatchScores, getPlayerInfo } from './api/nba';
 
@@ -15,6 +15,13 @@ interface ComparisonPlayer {
   draftScore: DraftRoomScoreResponse | null;
   trajectory: TrajectoryResponse | null;
   isLoading: boolean;
+}
+
+interface TeamSlot {
+  player: NbaPlayer;
+  draftScore: DraftRoomScoreResponse;
+  trajectory: TrajectoryResponse;
+  stats: any;
 }
 
 interface Player {
@@ -227,6 +234,19 @@ export default function App() {
   const [watchlist, setWatchlist] = useState<Player[]>([]);
 
   const [isWelcomeModalOpen, setIsWelcomeModalOpen] = useState(true);
+
+  const [teamBuilderMode, setTeamBuilderMode] = useState(false);
+  const [teamSlots, setTeamSlots] = useState<Record<string, TeamSlot | null>>({
+    PG: null,
+    SG: null,
+    SF: null,
+    PF: null,
+    C: null
+  });
+  const [currentSlot, setCurrentSlot] = useState<string>('PG');
+  const [teamResult, setTeamResult] = useState<{ teamScore: number; offRating: number; defRating: number } | null>(null);
+  const [mismatchWarning, setMismatchWarning] = useState<{ player: NbaPlayer; slot: string; data: TeamSlot } | null>(null);
+  const [mismatchConfirmed, setMismatchConfirmed] = useState(false);
 
   useEffect(() => {
     const stored = localStorage.getItem('draftroom_watchlist');
@@ -540,7 +560,138 @@ export default function App() {
     });
   };
 
+  const calculateTeamScore = (slots: Record<string, TeamSlot | null>) => {
+    const pg = slots['PG'];
+    const sg = slots['SG'];
+    const sf = slots['SF'];
+    const pf = slots['PF'];
+    const c = slots['C'];
+    
+    if (!pg || !sg || !sf || !pf || !c) return;
+    
+    const teamScore = (
+      pg.draftScore.draftroom_score * 1.15 +
+      sg.draftScore.draftroom_score * 1.0 +
+      sf.draftScore.draftroom_score * 1.0 +
+      pf.draftScore.draftroom_score * 1.0 +
+      c.draftScore.draftroom_score * 1.15
+    ) / 5.3;
+    
+    const offRaw = (
+      pg.trajectory.PTS.value * 1.2 +
+      sg.trajectory.PTS.value * 1.1 +
+      sf.trajectory.PTS.value * 1.0 +
+      pf.trajectory.PTS.value * 0.9 +
+      c.trajectory.PTS.value * 0.8
+    ) / 5 + (
+      pg.trajectory.AST.value * 1.3 +
+      sg.trajectory.AST.value * 1.1 +
+      sf.trajectory.AST.value * 0.9 +
+      pf.trajectory.AST.value * 0.8 +
+      c.trajectory.AST.value * 0.7
+    ) / 5;
+    
+    const offRating = 100 + (offRaw / 45.0) * 30;
+    
+    const defRaw = (
+      pg.stats.stl * 1.2 +
+      sg.stats.stl * 1.1 +
+      sf.stats.stl * 1.0 +
+      pf.stats.stl * 1.0 +
+      c.stats.stl * 0.8
+    ) / 5 + (
+      pg.stats.blk * 0.7 +
+      sg.stats.blk * 0.8 +
+      sf.stats.blk * 0.9 +
+      pf.stats.blk * 1.1 +
+      c.stats.blk * 1.3
+    ) / 5 + (
+      (pg.stats.reb + sg.stats.reb + sf.stats.reb + pf.stats.reb + c.stats.reb) / 5 * 0.3
+    );
+    
+    const defRating = 125 - (defRaw / 8.0) * 25;
+    
+    setTeamResult({ teamScore, offRating, defRating });
+  };
+
+  const fillSlot = (slot: string, data: TeamSlot) => {
+    setTeamSlots(prev => {
+      const nextSlots = { ...prev, [slot]: data };
+      
+      const slots = ['PG', 'SG', 'SF', 'PF', 'C'];
+      const currentIndex = slots.indexOf(slot);
+      let nextSlot = slot;
+      for (let i = 1; i <= 5; i++) {
+        const checkSlot = slots[(currentIndex + i) % 5];
+        if (!nextSlots[checkSlot]) {
+          nextSlot = checkSlot;
+          break;
+        }
+      }
+      setCurrentSlot(nextSlot);
+      
+      if (Object.values(nextSlots).every(s => s !== null)) {
+        calculateTeamScore(nextSlots);
+      }
+      
+      return nextSlots;
+    });
+    setMismatchWarning(null);
+  };
+
   const handlePlayerSelect = (player: NbaPlayer, force: boolean = false) => {
+    if (teamBuilderMode) {
+      setSearchQuery('');
+      setSearchResults([]);
+      
+      let position = player.position;
+      let team = player.team;
+      
+      const fetchData = async () => {
+        if (!position || team.full_name === 'NBA') {
+          try {
+            const info = await getPlayerInfo(player.id);
+            if (info && info.CommonPlayerInfo && info.CommonPlayerInfo.length > 0) {
+              const pInfo = info.CommonPlayerInfo[0];
+              position = pInfo.POSITION;
+              team = { full_name: `${pInfo.TEAM_CITY} ${pInfo.TEAM_NAME}`.trim() };
+            }
+          } catch (err) {
+            console.error(err);
+          }
+        }
+        
+        const updatedPlayer = { ...player, position, team };
+        
+        const [draftScore, trajectory, stats] = await Promise.all([
+          getDraftRoomScore(player.id),
+          getTrajectory(player.id),
+          getComputedAverages(player.id)
+        ]);
+        
+        if (!draftScore || !trajectory || !stats) return;
+        
+        const slotData = { player: updatedPlayer, draftScore, trajectory, stats };
+        
+        const pos = updatedPlayer.position || '';
+        let isMatch = false;
+        if (currentSlot === 'PG' && (pos.includes('PG') || pos === 'G')) isMatch = true;
+        else if (currentSlot === 'SG' && (pos.includes('SG') || pos === 'G')) isMatch = true;
+        else if (currentSlot === 'SF' && (pos.includes('SF') || pos === 'F')) isMatch = true;
+        else if (currentSlot === 'PF' && (pos.includes('PF') || pos === 'F')) isMatch = true;
+        else if (currentSlot === 'C' && pos.includes('C')) isMatch = true;
+        
+        if (!isMatch) {
+          setMismatchWarning({ player: updatedPlayer, slot: currentSlot, data: slotData });
+          setMismatchConfirmed(false);
+        } else {
+          fillSlot(currentSlot, slotData);
+        }
+      };
+      fetchData();
+      return;
+    }
+
     if (!force && comparisonMode && comparisonPlayers.length > 1 && !isAddingToComparison) {
       setPendingPlayer(player);
       setSearchResults([]);
@@ -571,11 +722,18 @@ export default function App() {
     setComparisonPlayers([]);
     setIsAddingToComparison(false);
     setSearchResults([]);
+    setTeamBuilderMode(false);
+    setTeamSlots({ PG: null, SG: null, SF: null, PF: null, C: null });
+    setCurrentSlot('PG');
+    setTeamResult(null);
+    setMismatchWarning(null);
     window.scrollTo({ top: 0, behavior: 'smooth' });
   };
 
   const currentPlaceholder = isFocused ? '' : (
-    isAddingToComparison && comparisonPlayers.length === 1 
+    teamBuilderMode 
+      ? `Search your ${currentSlot === 'PG' ? 'Point Guard' : currentSlot === 'SG' ? 'Shooting Guard' : currentSlot === 'SF' ? 'Small Forward' : currentSlot === 'PF' ? 'Power Forward' : 'Center'}...`
+      : isAddingToComparison && comparisonPlayers.length === 1 
       ? "Search for a second player..." 
       : isAddingToComparison && comparisonPlayers.length === 2 
       ? "Search for a third player..." 
@@ -604,10 +762,24 @@ export default function App() {
       {/* Navigation */}
       <nav className="sticky top-0 z-50 bg-slate-950/80 backdrop-blur-md border-b border-slate-800">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between">
-          <button onClick={handleResetApp} className="flex items-center gap-2 cursor-pointer border-none bg-transparent p-0">
-            <TrendingUp className="w-8 h-8 text-purple-500" strokeWidth={2.5} />
-            <span className="text-xl font-extrabold tracking-tight text-white">DraftRoom</span>
-          </button>
+          <div className="flex items-center gap-6">
+            <button onClick={handleResetApp} className="flex items-center gap-2 cursor-pointer border-none bg-transparent p-0">
+              <TrendingUp className="w-8 h-8 text-purple-500" strokeWidth={2.5} />
+              <span className="text-xl font-extrabold tracking-tight text-white">DraftRoom</span>
+            </button>
+            <button 
+              onClick={() => {
+                setTeamBuilderMode(true);
+                setSelectedPlayer(null);
+                setComparisonMode(false);
+                setComparisonPlayers([]);
+                window.scrollTo({ top: 0, behavior: 'smooth' });
+              }}
+              className="text-sm font-medium text-slate-300 hover:text-white transition-colors px-3 py-1.5 rounded-lg border border-slate-700 hover:bg-slate-800"
+            >
+              Build Team
+            </button>
+          </div>
           <div className="relative group">
             <button className="text-slate-300 hover:text-white font-medium px-4 py-2 rounded-lg transition-colors">
               Login
@@ -723,8 +895,125 @@ export default function App() {
           </div>
         </div>
 
+        {/* Team Builder Panel */}
+        {teamBuilderMode && (
+          <div className="w-full max-w-5xl mx-auto mt-8 mb-16">
+            {mismatchWarning && (
+              <div className="bg-amber-500/10 border border-amber-500/20 rounded-xl p-4 mb-6 flex items-start justify-between">
+                <div>
+                  <h3 className="text-amber-400 font-semibold mb-1 flex items-center gap-2">
+                    <AlertTriangle className="w-4 h-4" />
+                    Position Mismatch Warning
+                  </h3>
+                  <p className="text-amber-200/70 text-sm mb-3">
+                    {mismatchWarning.player.first_name} {mismatchWarning.player.last_name} is listed as {mismatchWarning.player.position || 'Unknown'}, but you are placing them in the {mismatchWarning.slot} slot. This may negatively impact your team's Defensive Rating.
+                  </p>
+                  <label className="flex items-center gap-2 text-sm text-amber-200/90 cursor-pointer">
+                    <input 
+                      type="checkbox" 
+                      checked={mismatchConfirmed}
+                      onChange={(e) => setMismatchConfirmed(e.target.checked)}
+                      className="rounded border-amber-500/30 bg-amber-500/10 text-amber-500 focus:ring-amber-500/50"
+                    />
+                    I understand, place player out of position
+                  </label>
+                </div>
+                <div className="flex gap-3 ml-4">
+                  <button 
+                    onClick={() => setMismatchWarning(null)}
+                    className="px-4 py-2 text-sm font-medium text-amber-200/70 hover:text-amber-200 transition-colors"
+                  >
+                    Cancel
+                  </button>
+                  <button 
+                    disabled={!mismatchConfirmed}
+                    onClick={() => fillSlot(mismatchWarning.slot, mismatchWarning.data)}
+                    className="px-4 py-2 text-sm font-medium bg-amber-500 hover:bg-amber-600 text-slate-950 rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                  >
+                    Confirm
+                  </button>
+                </div>
+              </div>
+            )}
+
+            <div className="grid grid-cols-5 gap-4 mb-8">
+              {['PG', 'SG', 'SF', 'PF', 'C'].map((slot) => {
+                const data = teamSlots[slot];
+                const isActive = currentSlot === slot;
+                return (
+                  <div 
+                    key={slot}
+                    onClick={() => setCurrentSlot(slot)}
+                    className={`bg-slate-900 border rounded-xl p-4 cursor-pointer transition-all ${isActive ? 'border-purple-500 shadow-[0_0_15px_rgba(168,85,247,0.2)]' : 'border-slate-800 hover:border-slate-700'}`}
+                  >
+                    <div className="text-xs font-bold text-slate-500 mb-2">{slot}</div>
+                    {data ? (
+                      <div className="flex flex-col items-center text-center">
+                        <div className="w-12 h-12 rounded-full bg-slate-800 overflow-hidden mb-2 border border-slate-700">
+                          <img 
+                            src={`https://cdn.nba.com/headshots/nba/latest/260x190/${data.player.id}.png`}
+                            alt={`${data.player.first_name} ${data.player.last_name}`}
+                            className="w-full h-full object-cover"
+                            onError={(e) => {
+                              (e.target as HTMLImageElement).src = 'https://cdn.nba.com/headshots/nba/latest/260x190/fallback.png';
+                            }}
+                            referrerPolicy="no-referrer"
+                          />
+                        </div>
+                        <div className="text-sm font-bold text-slate-200 line-clamp-1">{data.player.first_name} {data.player.last_name}</div>
+                        <div className="text-xs text-slate-400 mb-2">{data.player.position || 'N/A'}</div>
+                        <div className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-purple-500/10 border border-purple-500/20 text-purple-400 text-xs font-semibold">
+                          DR: {data.draftScore.draftroom_score.toFixed(1)}
+                        </div>
+                      </div>
+                    ) : (
+                      <div className="h-24 flex items-center justify-center text-slate-600 text-sm italic">
+                        Empty
+                      </div>
+                    )}
+                  </div>
+                );
+              })}
+            </div>
+
+            {teamResult && (
+              <div className="bg-slate-900 border border-slate-800 rounded-2xl p-6 shadow-xl shadow-slate-900/50">
+                <div className="flex items-center justify-between mb-6">
+                  <h2 className="text-xl font-bold text-white">Team Analysis</h2>
+                  <button 
+                    onClick={() => {
+                      setTeamSlots({ PG: null, SG: null, SF: null, PF: null, C: null });
+                      setCurrentSlot('PG');
+                      setTeamResult(null);
+                    }}
+                    className="text-sm text-slate-400 hover:text-white transition-colors flex items-center gap-2"
+                  >
+                    <RefreshCw className="w-4 h-4" />
+                    Reset Team
+                  </button>
+                </div>
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                  <div className="bg-slate-950 border border-purple-500/20 rounded-xl p-6 flex flex-col items-center justify-center text-center">
+                    <div className="text-sm font-medium text-purple-400 mb-2">DraftRoom Team Score</div>
+                    <div className="text-4xl font-black text-white">{teamResult.teamScore.toFixed(1)}</div>
+                  </div>
+                  <div className="bg-slate-950 border border-emerald-500/20 rounded-xl p-6 flex flex-col items-center justify-center text-center">
+                    <div className="text-sm font-medium text-emerald-400 mb-2">Offensive Rating</div>
+                    <div className="text-4xl font-black text-white">{teamResult.offRating.toFixed(1)}</div>
+                  </div>
+                  <div className="bg-slate-950 border border-blue-500/20 rounded-xl p-6 flex flex-col items-center justify-center text-center">
+                    <div className="text-sm font-medium text-blue-400 mb-1">Defensive Rating</div>
+                    <div className="text-xs text-slate-500 mb-2">(lower is better)</div>
+                    <div className="text-4xl font-black text-white">{teamResult.defRating.toFixed(1)}</div>
+                  </div>
+                </div>
+              </div>
+            )}
+          </div>
+        )}
+
         {/* Selected Player View */}
-        {selectedPlayer && (
+        {!teamBuilderMode && selectedPlayer && (
           <div className="mb-16">
             <div className="bg-slate-900 border border-slate-800 rounded-2xl p-8 flex flex-col shadow-xl shadow-slate-900/50">
               <div className="flex justify-between items-start w-full mb-6">
@@ -1145,49 +1434,51 @@ export default function App() {
         )}
 
         {/* Breakout Alerts */}
-        <div className="mb-16">
-          <div className="flex items-center gap-3 mb-6">
-            <div className="p-2 bg-amber-500/10 rounded-lg border border-amber-500/20">
-              <Star className="w-5 h-5 text-amber-500" />
+        {!teamBuilderMode && (
+          <div className="mb-16">
+            <div className="flex items-center gap-3 mb-6">
+              <div className="p-2 bg-amber-500/10 rounded-lg border border-amber-500/20">
+                <Star className="w-5 h-5 text-amber-500" />
+              </div>
+              <h2 className="text-2xl font-bold text-slate-100">Breakout Alerts</h2>
             </div>
-            <h2 className="text-2xl font-bold text-slate-100">Breakout Alerts</h2>
-          </div>
-          {isLoadingBatch ? (
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-              {[...Array(3)].map((_, i) => (
-                <div key={i} className="bg-slate-900/50 rounded-2xl p-6 border border-slate-800/50 h-40 animate-pulse">
-                  <div className="flex gap-4 h-full">
-                    <div className="w-12 h-12 bg-slate-800 rounded-xl"></div>
-                    <div className="flex-1 space-y-3 py-1">
-                      <div className="h-4 bg-slate-800 rounded w-3/4"></div>
-                      <div className="h-3 bg-slate-800 rounded w-1/2"></div>
+            {isLoadingBatch ? (
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                {[...Array(3)].map((_, i) => (
+                  <div key={i} className="bg-slate-900/50 rounded-2xl p-6 border border-slate-800/50 h-40 animate-pulse">
+                    <div className="flex gap-4 h-full">
+                      <div className="w-12 h-12 bg-slate-800 rounded-xl"></div>
+                      <div className="flex-1 space-y-3 py-1">
+                        <div className="h-4 bg-slate-800 rounded w-3/4"></div>
+                        <div className="h-3 bg-slate-800 rounded w-1/2"></div>
+                      </div>
                     </div>
                   </div>
-                </div>
-              ))}
-            </div>
-          ) : batchError ? (
-            <div className="text-rose-400 bg-rose-400/10 p-4 rounded-xl border border-rose-400/20">
-              {batchError}
-            </div>
-          ) : (
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-              {breakoutPlayers.map(player => (
-                <PlayerCard 
-                  key={player.id} 
-                  player={player} 
-                  isBreakout={true} 
-                  onSelect={handleSelectPlayerCard} 
-                  isBookmarked={watchlist.some(p => p.id === player.id)}
-                  onToggleBookmark={toggleBookmark}
-                />
-              ))}
-            </div>
-          )}
-        </div>
+                ))}
+              </div>
+            ) : batchError ? (
+              <div className="text-rose-400 bg-rose-400/10 p-4 rounded-xl border border-rose-400/20">
+                {batchError}
+              </div>
+            ) : (
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                {breakoutPlayers.map(player => (
+                  <PlayerCard 
+                    key={player.id} 
+                    player={player} 
+                    isBreakout={true} 
+                    onSelect={handleSelectPlayerCard} 
+                    isBookmarked={watchlist.some(p => p.id === player.id)}
+                    onToggleBookmark={toggleBookmark}
+                  />
+                ))}
+              </div>
+            )}
+          </div>
+        )}
 
         {/* My Watchlist */}
-        {watchlist.length > 0 && (
+        {!teamBuilderMode && watchlist.length > 0 && (
           <div className="mb-16">
             <div className="flex items-center justify-between mb-6">
               <div className="flex items-center gap-3">
@@ -1219,10 +1510,11 @@ export default function App() {
         )}
 
         {/* Top Prospects Grid */}
-        <div>
-          <div className="flex items-center justify-between mb-6">
-            <h2 className="text-2xl font-bold text-slate-100">Top Prospects</h2>
-            <div className="flex gap-2">
+        {!teamBuilderMode && (
+          <div>
+            <div className="flex items-center justify-between mb-6">
+              <h2 className="text-2xl font-bold text-slate-100">Top Prospects</h2>
+              <div className="flex gap-2">
               <select 
                 className="bg-slate-900 border border-slate-800 text-slate-300 text-sm rounded-lg focus:ring-indigo-500 focus:border-indigo-500 block p-2 outline-none"
                 value={selectedPosition}
@@ -1277,6 +1569,7 @@ export default function App() {
             </div>
           )}
         </div>
+        )}
       </main>
       <footer className="bg-slate-900 border-t border-slate-800 mt-16">
   <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
