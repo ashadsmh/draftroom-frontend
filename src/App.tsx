@@ -88,10 +88,12 @@ export default function App() {
   const [teamBuilderError, setTeamBuilderError] = useState<string | null>(null);
 
   const [teamBuilderMode, setTeamBuilderMode] = useState(false);
+  const [isComparingTeams, setIsComparingTeams] = useState(false);
   const [teamSlots, setTeamSlots] = useState<Record<string, TeamSlot | null>>({
     PG: null, SG: null, SF: null, PF: null, C: null
   });
   const [currentSlot, setCurrentSlot] = useState<string>('PG');
+  const [teamBCurrentSlot, setTeamBCurrentSlot] = useState<string>('PG');
   const [savedTeams, setSavedTeams] = useState<SavedTeam[]>([]);
   const [suppressTeamDeleteConfirm, setSuppressTeamDeleteConfirm] = useState(false);
   const [teamToDelete, setTeamToDelete] = useState<number | null>(null);
@@ -305,8 +307,12 @@ export default function App() {
         setTeamBuilderError(null);
 
         // Duplicate player guard
-        const alreadyInTeam = Object.values(teamSlots).some(
-          slot => slot?.player.id === player.id
+        const activeTeam = teamBuilderRef.current?.getActiveTeam();
+        const slotsToCheck = (isComparingTeams && activeTeam === 'B')
+          ? (teamBuilderRef.current?.getTeamBSlots() ?? {})
+          : teamSlots;
+        const alreadyInTeam = Object.values(slotsToCheck).some(
+          (slot: any) => slot?.player.id === player.id
         );
         if (alreadyInTeam) {
           setTeamBuilderError(`${player.first_name} ${player.last_name} is already on your team.`);
@@ -345,7 +351,11 @@ export default function App() {
         }
 
         const slotData: TeamSlot = { player: updatedPlayer, draftScore, trajectory, stats };
-        teamBuilderRef.current?.handleSlotSelection(updatedPlayer, slotData);
+        if (isComparingTeams && activeTeam === 'B') {
+          teamBuilderRef.current?.handleTeamBSlotSelection(updatedPlayer, slotData);
+        } else {
+          teamBuilderRef.current?.handleSlotSelection(updatedPlayer, slotData);
+        }
       };
 
       fetchAndFill();
@@ -390,9 +400,14 @@ export default function App() {
     window.scrollTo({ top: 0, behavior: 'smooth' });
   };
 
+  const activeTeam = teamBuilderMode ? (teamBuilderRef.current?.getActiveTeam() ?? 'A') : 'A';
+  const activeSlot = (teamBuilderMode && isComparingTeams && activeTeam === 'B') ? teamBCurrentSlot : currentSlot;
+  const slotLabel = activeSlot === 'PG' ? 'Point Guard' : activeSlot === 'SG' ? 'Shooting Guard' : activeSlot === 'SF' ? 'Small Forward' : activeSlot === 'PF' ? 'Power Forward' : 'Center';
+  const teamLabel = (teamBuilderMode && isComparingTeams) ? (activeTeam === 'B' ? ' for Team B' : ' for Team A') : '';
+
   const currentPlaceholder = isFocused ? '' : (
     teamBuilderMode
-      ? `Search your ${currentSlot === 'PG' ? 'Point Guard' : currentSlot === 'SG' ? 'Shooting Guard' : currentSlot === 'SF' ? 'Small Forward' : currentSlot === 'PF' ? 'Power Forward' : 'Center'}...`
+      ? `Search your ${slotLabel}${teamLabel}...`
       : isAddingToComparison && comparisonPlayers.length === 1
       ? "Search for a second player..."
       : isAddingToComparison && comparisonPlayers.length === 2
@@ -566,6 +581,7 @@ export default function App() {
               teamSlots={teamSlots}
               currentSlot={currentSlot}
               setCurrentSlot={setCurrentSlot}
+              onTeamBSlotChange={(slot) => setTeamBCurrentSlot(slot)}
               onFillSlot={(slot, data) => {
                 setTeamSlots(prev => {
                   const next = { ...prev, [slot]: data };
@@ -588,10 +604,13 @@ export default function App() {
               onResetTeam={() => {
                 setTeamSlots({ PG: null, SG: null, SF: null, PF: null, C: null });
                 setCurrentSlot('PG');
+                setIsComparingTeams(false);
               }}
               savedTeams={savedTeams}
               onSaveTeam={(team) => setSavedTeams(prev => [team, ...prev])}
               onUnsaveTeam={(teamId) => setSavedTeams(prev => prev.filter(t => t.id !== teamId))}
+              isComparingTeams={isComparingTeams}
+              onComparisonModeChange={setIsComparingTeams}
             />
           </>
         )}

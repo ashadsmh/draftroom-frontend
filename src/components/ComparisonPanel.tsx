@@ -1,7 +1,7 @@
 import React from 'react';
 import { Loader2, TrendingUp, TrendingDown, Minus } from 'lucide-react';
 import { RadarChart, Radar, PolarGrid, PolarAngleAxis, ResponsiveContainer } from 'recharts';
-import { ComparisonPlayer, TrajectoryResponse, getScoreColor, getScoreBg } from '../types';
+import { ComparisonPlayer, TrajectoryResponse, getScoreColor, getScoreBg, getCareerTier } from '../types';
 import { abbreviatePosition } from './PlayerCard';
 
 const getStatColor = (val: number | undefined, allVals: (number | undefined)[]) => {
@@ -62,13 +62,31 @@ export default function ComparisonPanel({ comparisonPlayers, onAddThird, onEndCo
               <div key={cp.player.id} className="flex flex-col">
                 {/* Header */}
                 <div className="text-center mb-8 flex flex-col items-center">
-                  <img 
-                    src={`https://cdn.nba.com/headshots/nba/latest/1040x760/${cp.player.id}.png`}
-                    alt={`${cp.player.first_name} ${cp.player.last_name}`}
-                    className="w-16 h-16 rounded-xl object-cover mb-3 bg-slate-800/50"
-                    onError={(e) => e.currentTarget.style.display = 'none'}
-                    referrerPolicy="no-referrer"
-                  />
+                  <div className="relative inline-block mb-3">
+                    <img 
+                      src={`https://cdn.nba.com/headshots/nba/latest/1040x760/${cp.player.id}.png`}
+                      alt={`${cp.player.first_name} ${cp.player.last_name}`}
+                      className="w-16 h-16 rounded-xl object-cover bg-slate-800/50"
+                      onError={(e) => e.currentTarget.style.display = 'none'}
+                      referrerPolicy="no-referrer"
+                    />
+                    {(() => {
+                      const tier = getCareerTier(cp.player.id);
+                      if (tier === 'Elite') return (
+                        <div className="absolute -top-1 -right-1 bg-amber-500 text-slate-950 text-[7px] font-black px-1 py-0.5 rounded-full leading-none shadow-sm tracking-tight">
+                          ELITE
+                        </div>
+                      );
+                      if (tier === 'Star') return (
+                        <div className="absolute -top-1 -right-1 bg-slate-900 border border-yellow-500/50 rounded-full p-0.5 shadow-sm">
+                          <svg width="10" height="10" viewBox="0 0 24 24" fill="#eab308" xmlns="http://www.w3.org/2000/svg">
+                            <path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/>
+                          </svg>
+                        </div>
+                      );
+                      return null;
+                    })()}
+                  </div>
                   <h3 className="text-2xl font-bold text-slate-100 mb-2">
                     {cp.player.first_name} {cp.player.last_name}
                   </h3>

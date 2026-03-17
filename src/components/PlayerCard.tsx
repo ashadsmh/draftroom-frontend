@@ -1,6 +1,6 @@
 import React from 'react';
 import { TrendingUp, TrendingDown, Minus, Star, ChevronRight, Bookmark } from 'lucide-react';
-import { Player, getScoreColor, getScoreBg } from '../types';
+import { Player, getScoreColor, getScoreBg, getCareerTier } from '../types';
 
 export const abbreviatePosition = (position: string): string => {
   if (!position) return '';
@@ -44,13 +44,31 @@ const PlayerCard = ({ player, isBreakout = false, onSelect, isBookmarked = false
       
       <div className="flex justify-between items-start mb-4">
         <div className="flex items-center gap-3 min-w-0">
-          <img 
-            src={`https://cdn.nba.com/headshots/nba/latest/1040x760/${player.id}.png`}
-            alt={player.name}
-            className="w-12 h-12 rounded-lg object-cover bg-slate-800/50 flex-shrink-0"
-            onError={(e) => e.currentTarget.style.display = 'none'}
-            referrerPolicy="no-referrer"
-          />
+          <div className="relative flex-shrink-0">
+            <img 
+              src={`https://cdn.nba.com/headshots/nba/latest/1040x760/${player.id}.png`}
+              alt={player.name}
+              className="w-12 h-12 rounded-lg object-cover bg-slate-800/50"
+              onError={(e) => e.currentTarget.style.display = 'none'}
+              referrerPolicy="no-referrer"
+            />
+            {(() => {
+              const tier = getCareerTier(parseInt(player.id));
+              if (tier === 'Elite') return (
+                <div className="absolute -top-1 -right-1 bg-amber-500 text-slate-950 text-[7px] font-black px-1 py-0.5 rounded-full leading-none shadow-sm tracking-tight">
+                  ELITE
+                </div>
+              );
+              if (tier === 'Star') return (
+                <div className="absolute -top-1.5 -right-1.5 bg-slate-900 border border-yellow-500/50 rounded-full p-0.5 shadow-md">
+                  <svg width="10" height="10" viewBox="0 0 24 24" fill="#eab308" xmlns="http://www.w3.org/2000/svg">
+                    <path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/>
+                  </svg>
+                </div>
+              );
+              return null;
+            })()}
+          </div>
           <div className="min-w-0">
             <div className="flex items-center gap-2 mb-1 min-w-0">
               <h3 className="text-lg font-bold text-slate-100 truncate">{player.name}</h3>
