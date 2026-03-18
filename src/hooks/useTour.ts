@@ -1,11 +1,12 @@
 import { useEffect, useCallback } from 'react';
-import { driver } from 'driver.js/dist/driver.esm.js';
-import 'driver.js/dist/driver.css';
 
 const TOUR_KEY = 'draftroom_tour_seen';
 
 export function useTour() {
-  const startTour = useCallback(() => {
+  const startTour = useCallback(async () => {
+    const { driver } = await import('driver.js');
+    await import('driver.js/dist/driver.css');
+
     const driverObj = driver({
       showProgress: true,
       animate: true,
@@ -80,11 +81,9 @@ export function useTour() {
     driverObj.drive();
   }, []);
 
-  // Auto-start on first visit
   useEffect(() => {
     const seen = localStorage.getItem(TOUR_KEY);
     if (!seen) {
-      // Small delay so the page renders first
       const timer = setTimeout(() => startTour(), 1200);
       return () => clearTimeout(timer);
     }
