@@ -76,7 +76,6 @@ const NICKNAMES: Record<string, string> = {
   'kat': 'Karl-Anthony Towns',
   'towns': 'Karl-Anthony Towns',
   'fox': "De'Aaron Fox",
-  'spida': 'Donovan Mitchell',
   'sabonis': 'Domantas Sabonis',
   'siakam': 'Pascal Siakam',
   'wiggins': 'Andrew Wiggins',
