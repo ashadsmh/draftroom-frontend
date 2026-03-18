@@ -104,46 +104,61 @@ export default function LandingPage({ onEnterApp }: LandingPageProps) {
             <span className="text-xs font-semibold text-purple-400 uppercase tracking-wider">Fantasy Basketball Analytics</span>
           </div>
 
-          <h1 className="text-4xl md:text-5xl lg:text-6xl font-extrabold text-slate-100 leading-tight mb-4 tracking-tight">
-            Know who to start<br />
-            <span className="text-purple-400">before anyone else</span>
-          </h1>
+        <h1 className="text-4xl md:text-5xl lg:text-6xl font-extrabold text-slate-100 leading-tight mb-4 tracking-tight">
+            Stop guessing.<br />
+            <span className="text-purple-400">Start winning.</span>
+        </h1>
 
-          <p className="text-lg text-slate-400 mb-8 leading-relaxed">
-            DraftRoom gives fantasy players a real edge — proprietary DR Scores, injury-aware lineup decisions, and 5-game projections. Built for serious players and casual fans alike.
-          </p>
+        <p className="text-lg text-slate-400 mb-6 leading-relaxed">
+            DraftRoom brings together proprietary efficiency scores, real-time injury intelligence, and opponent-adjusted projections.
+        </p>
 
-          {/* Stat pills */}
-          <div className="flex flex-wrap gap-3 mb-10">
-            <div className="flex items-center gap-2 bg-slate-900 border border-slate-800 rounded-lg px-3 py-2">
-              <BarChart2 className="w-4 h-4 text-purple-400" />
-              <span className="text-xs font-semibold text-slate-300">Proprietary DR Score</span>
+          {/* Three reason boxes */}
+          <div className="flex flex-col gap-3 mb-8 w-full">
+            <div className="flex items-center gap-3 bg-slate-900 border border-slate-800 rounded-xl px-4 py-3">
+              <div className="p-1.5 bg-purple-500/10 rounded-lg border border-purple-500/20 flex-shrink-0">
+                <BarChart2 className="w-4 h-4 text-purple-400" />
+              </div>
+              <div>
+                <div className="text-xs font-bold text-slate-200">Proprietary DR Score</div>
+                <div className="text-xs text-slate-500">Efficiency metric built from TS%, playmaking, defense, foul draw & volume</div>
+              </div>
             </div>
-            <div className="flex items-center gap-2 bg-slate-900 border border-slate-800 rounded-lg px-3 py-2">
-              <Shield className="w-4 h-4 text-emerald-400" />
-              <span className="text-xs font-semibold text-slate-300">Injury-Aware Decisions</span>
+            <div className="flex items-center gap-3 bg-slate-900 border border-slate-800 rounded-xl px-4 py-3">
+              <div className="p-1.5 bg-emerald-500/10 rounded-lg border border-emerald-500/20 flex-shrink-0">
+                <Shield className="w-4 h-4 text-emerald-400" />
+              </div>
+              <div>
+                <div className="text-xs font-bold text-slate-200">Injury-Aware Lineup Decisions</div>
+                <div className="text-xs text-slate-500">Real-time injury reports with reasoned start/sit recommendations</div>
+              </div>
             </div>
-            <div className="flex items-center gap-2 bg-slate-900 border border-slate-800 rounded-lg px-3 py-2">
-              <Clock className="w-4 h-4 text-amber-400" />
-              <span className="text-xs font-semibold text-slate-300">5-Game Projections</span>
+            <div className="flex items-center gap-3 bg-slate-900 border border-slate-800 rounded-xl px-4 py-3">
+              <div className="p-1.5 bg-amber-500/10 rounded-lg border border-amber-500/20 flex-shrink-0">
+                <Clock className="w-4 h-4 text-amber-400" />
+              </div>
+              <div>
+                <div className="text-xs font-bold text-slate-200">Opponent-Adjusted Projections</div>
+                <div className="text-xs text-slate-500">5-game stat forecasts calibrated against upcoming defensive matchups</div>
+              </div>
             </div>
           </div>
 
-          {/* CTAs */}
+          {/* CTAs — Explore Players first */}
           <div className="flex flex-col sm:flex-row gap-3 w-full sm:w-auto">
             <button
-              onClick={() => handleEnter('optimize')}
+              onClick={() => handleEnter()}
               className="flex items-center justify-center gap-2 bg-purple-600 hover:bg-purple-500 text-white font-bold px-6 py-3 rounded-xl transition-colors shadow-lg shadow-purple-900/30"
             >
-              <Zap className="w-4 h-4" />
-              Optimize My Lineup
+              Explore Players
               <ArrowRight className="w-4 h-4" />
             </button>
             <button
-              onClick={() => handleEnter()}
+              onClick={() => handleEnter('optimize')}
               className="flex items-center justify-center gap-2 bg-slate-900 hover:bg-slate-800 text-slate-200 font-semibold px-6 py-3 rounded-xl border border-slate-700 transition-colors"
             >
-              Explore Players
+              <Zap className="w-4 h-4 text-emerald-400" />
+              Optimize My Lineup
             </button>
           </div>
         </div>
@@ -176,7 +191,7 @@ export default function LandingPage({ onEnterApp }: LandingPageProps) {
                 <img
                   src={`https://cdn.nba.com/headshots/nba/latest/1040x760/${player.id}.png`}
                   alt={player.name}
-                  className="w-12 h-12 rounded-xl object-cover bg-slate-800"
+                  className="w-20 h-20 rounded-xl object-cover bg-slate-800"
                   onError={(e) => e.currentTarget.style.display = 'none'}
                   referrerPolicy="no-referrer"
                 />
