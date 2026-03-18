@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef, useMemo, useCallback } from 'react';
-import { Search, TrendingUp, Star, ChevronRight, Loader2, X, Bookmark, AlertTriangle, Zap, BarChart2 } from 'lucide-react';
+import { Search, TrendingUp, Star, ChevronRight, Loader2, X, Bookmark, AlertTriangle, Zap, BarChart2, LogOut } from 'lucide-react';
 import { getComputedAverages, NbaPlayer, getDraftRoomScore, getTrajectory, getPlayerInfo } from './api/nba';
 import PlayerCard, { abbreviatePosition } from './components/PlayerCard';
 import PlayerPanel from './components/PlayerPanel';
@@ -10,6 +10,8 @@ import TourOverlay from './components/TourOverlay';
 import { useSearch } from './hooks/useSearch';
 import { usePlayerData } from './hooks/usePlayerData';
 import { useTour, LEBRON_ID } from './hooks/useTour';
+import { useAuth } from './hooks/useAuth';
+import { useFirestoreData } from './hooks/useFirestoreData';
 import { ComparisonPlayer, TeamSlot, Player, SavedTeam } from './types';
 
 const LEBRON: Player = {
@@ -31,6 +33,9 @@ export default function App() {
     isSearching,
     searchError,
   } = useSearch();
+
+  const { user, isLoading: isAuthLoading, signInWithGoogle, signOutUser } = useAuth();
+  const { watchlist, setWatchlist, savedTeams, setSavedTeams } = useFirestoreData(user);
 
   const [placeholder, setPlaceholder] = useState('');
   const [isFocused, setIsFocused] = useState(false);
@@ -96,7 +101,6 @@ export default function App() {
   const searchInputRef = useRef<HTMLInputElement>(null);
   const teamBuilderRef = useRef<TeamBuilderRef>(null);
 
-  const [watchlist, setWatchlist] = useState<Player[]>([]);
   const [teamBuilderError, setTeamBuilderError] = useState<string | null>(null);
   const [teamBuilderMode, setTeamBuilderMode] = useState(false);
   const [optimizeMode, setOptimizeMode] = useState(false);
@@ -106,7 +110,6 @@ export default function App() {
   });
   const [currentSlot, setCurrentSlot] = useState<string>('PG');
   const [teamBCurrentSlot, setTeamBCurrentSlot] = useState<string>('PG');
-  const [savedTeams, setSavedTeams] = useState<SavedTeam[]>([]);
   const [suppressTeamDeleteConfirm, setSuppressTeamDeleteConfirm] = useState(false);
   const [teamToDelete, setTeamToDelete] = useState<number | null>(null);
 
@@ -114,7 +117,7 @@ export default function App() {
     setWatchlist(prev =>
       prev.some(p => p.id === LEBRON_ID) ? prev : [...prev, LEBRON]
     );
-  }, []);
+  }, [setWatchlist]);
 
   const handleTourEnd = useCallback(() => {}, []);
 
@@ -122,30 +125,6 @@ export default function App() {
     handleTourStart,
     handleTourEnd
   );
-
-  useEffect(() => {
-    const stored = localStorage.getItem('draftroom_saved_teams');
-    if (stored) {
-      try { setSavedTeams(JSON.parse(stored)); }
-      catch (e) { console.error('Failed to parse saved teams from localStorage', e); }
-    }
-  }, []);
-
-  useEffect(() => {
-    localStorage.setItem('draftroom_saved_teams', JSON.stringify(savedTeams));
-  }, [savedTeams]);
-
-  useEffect(() => {
-    const stored = localStorage.getItem('draftroom_watchlist');
-    if (stored) {
-      try { setWatchlist(JSON.parse(stored)); }
-      catch (e) { console.error('Failed to parse watchlist from localStorage', e); }
-    }
-  }, []);
-
-  useEffect(() => {
-    localStorage.setItem('draftroom_watchlist', JSON.stringify(watchlist));
-  }, [watchlist]);
 
   const toggleBookmark = (player: Player) => {
     setWatchlist(prev =>
@@ -173,7 +152,6 @@ export default function App() {
 
   const filteredAndSortedPlayers = useMemo(() => {
     let result = [...players];
-
     if (selectedPosition === 'Guards') {
       result = result.filter(p => p.position.includes('G') || p.position === 'PG' || p.position === 'SG');
     } else if (selectedPosition === 'Forwards') {
@@ -181,11 +159,9 @@ export default function App() {
     } else if (selectedPosition === 'Centers') {
       result = result.filter(p => p.position === 'C');
     }
-
     if (selectedSort === 'Trending Up') {
       result = result.filter(p => p.trend === 'up');
     }
-
     result.sort((a, b) => {
       if (selectedSort === 'Highest Score' || selectedSort === 'Trending Up') {
         if (a.score === null && b.score === null) return 0;
@@ -202,7 +178,6 @@ export default function App() {
       }
       return 0;
     });
-
     return result;
   }, [players, selectedPosition, selectedSort]);
 
@@ -251,23 +226,17 @@ export default function App() {
       typeState.current = { index: 0, text: '', isDeleting: false };
       return;
     }
-
     let timeout: NodeJS.Timeout;
-
     const type = () => {
       const state = typeState.current;
       const fullText = placeholders[state.index];
-
       if (state.isDeleting) {
         state.text = fullText.substring(0, state.text.length - 1);
       } else {
         state.text = fullText.substring(0, state.text.length + 1);
       }
-
       setPlaceholder(state.text);
-
       let typeSpeed = state.isDeleting ? 30 : 80;
-
       if (!state.isDeleting && state.text === fullText) {
         typeSpeed = 1500;
         state.isDeleting = true;
@@ -276,10 +245,8 @@ export default function App() {
         state.index = (state.index + 1) % placeholders.length;
         typeSpeed = 400;
       }
-
       timeout = setTimeout(type, typeSpeed);
     };
-
     timeout = setTimeout(type, 100);
     return () => clearTimeout(timeout);
   }, [isFocused]);
@@ -287,7 +254,6 @@ export default function App() {
   const fetchComparisonData = async (player: NbaPlayer) => {
     let position = player.position;
     let team = player.team;
-
     if (!position || team.full_name === 'NBA') {
       try {
         const info = await getPlayerInfo(player.id);
@@ -296,13 +262,9 @@ export default function App() {
           position = pInfo.POSITION;
           team = { full_name: `${pInfo.TEAM_CITY} ${pInfo.TEAM_NAME}`.trim() };
         }
-      } catch (err) {
-        console.error(err);
-      }
+      } catch (err) { console.error(err); }
     }
-
     const updatedPlayer = { ...player, position, team };
-
     Promise.allSettled([
       getComputedAverages(player.id),
       getDraftRoomScore(player.id),
@@ -327,10 +289,8 @@ export default function App() {
     if (teamBuilderMode) {
       setSearchQuery('');
       setSearchResults([]);
-
       const fetchAndFill = async () => {
         setTeamBuilderError(null);
-
         const activeTeam = teamBuilderRef.current?.getActiveTeam();
         const slotsToCheck = (isComparingTeams && activeTeam === 'B')
           ? (teamBuilderRef.current?.getTeamBSlots() ?? {})
@@ -343,10 +303,8 @@ export default function App() {
           setTimeout(() => setTeamBuilderError(null), 3000);
           return;
         }
-
         let position = player.position;
         let team = player.team;
-
         if (!position || team.full_name === 'NBA') {
           try {
             const info = await getPlayerInfo(player.id);
@@ -355,25 +313,19 @@ export default function App() {
               position = pInfo.POSITION;
               team = { full_name: `${pInfo.TEAM_CITY} ${pInfo.TEAM_NAME}`.trim() };
             }
-          } catch (err) {
-            console.error(err);
-          }
+          } catch (err) { console.error(err); }
         }
-
         const updatedPlayer = { ...player, position, team };
-
         const [draftScore, trajectory, stats] = await Promise.all([
           getDraftRoomScore(player.id),
           getTrajectory(player.id),
           getComputedAverages(player.id)
         ]);
-
         if (!draftScore || !trajectory || !stats) {
           setTeamBuilderError(`No stats available for ${player.first_name} ${player.last_name} — player may be inactive or retired.`);
           setTimeout(() => setTeamBuilderError(null), 4000);
           return;
         }
-
         const slotData: TeamSlot = { player: updatedPlayer, draftScore, trajectory, stats };
         if (isComparingTeams && activeTeam === 'B') {
           teamBuilderRef.current?.handleTeamBSlotSelection(updatedPlayer, slotData);
@@ -381,17 +333,14 @@ export default function App() {
           teamBuilderRef.current?.handleSlotSelection(updatedPlayer, slotData);
         }
       };
-
       fetchAndFill();
       return;
     }
-
     if (!force && comparisonMode && comparisonPlayers.length > 1 && !isAddingToComparison) {
       setPendingPlayer(player);
       setSearchResults([]);
       return;
     }
-
     if (isAddingToComparison) {
       if (comparisonPlayers.length < 3 && !comparisonPlayers.some(p => p.player.id === player.id)) {
         setComparisonPlayers(prev => [
@@ -480,6 +429,7 @@ export default function App() {
               Optimize Lineup
             </button>
           </div>
+
           <div className="flex items-center gap-2">
             <button
               onClick={startTour}
@@ -487,16 +437,43 @@ export default function App() {
             >
               Tutorial
             </button>
-            <div className="relative group">
-              <button className="text-slate-300 hover:text-white font-medium px-4 py-2 rounded-lg transition-colors">
-                Login
-              </button>
-              <div className="absolute top-full mt-2 left-1/2 -translate-x-1/2 bg-slate-800 text-slate-300 text-xs font-medium px-3 py-1.5 rounded-lg border border-slate-700 whitespace-nowrap shadow-lg opacity-0 group-hover:opacity-100 transition-opacity duration-200 pointer-events-none">
-                Coming Soon
-                <div className="absolute -top-1.5 left-1/2 -translate-x-1/2 border-l-4 border-r-4 border-b-4 border-transparent border-b-slate-700"></div>
-                <div className="absolute -top-1 left-1/2 -translate-x-1/2 border-l-4 border-r-4 border-b-4 border-transparent border-b-slate-800"></div>
+
+            {/* Auth */}
+            {isAuthLoading ? (
+              <Loader2 className="w-5 h-5 text-slate-500 animate-spin" />
+            ) : user ? (
+              <div className="flex items-center gap-2">
+                <img
+                  src={user.photoURL || ''}
+                  alt={user.displayName || ''}
+                  className="w-8 h-8 rounded-full border border-slate-700"
+                  referrerPolicy="no-referrer"
+                />
+                <span className="text-sm text-slate-300 font-medium hidden sm:block">
+                  {user.displayName?.split(' ')[0]}
+                </span>
+                <button
+                  onClick={signOutUser}
+                  className="text-slate-500 hover:text-rose-400 transition-colors p-1.5 rounded-lg hover:bg-rose-400/10"
+                  title="Sign out"
+                >
+                  <LogOut className="w-4 h-4" />
+                </button>
               </div>
-            </div>
+            ) : (
+              <button
+                onClick={signInWithGoogle}
+                className="flex items-center gap-2 bg-white hover:bg-slate-100 text-slate-900 text-sm font-semibold px-3 py-1.5 rounded-lg transition-colors"
+              >
+                <svg className="w-4 h-4" viewBox="0 0 24 24">
+                  <path fill="#4285F4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"/>
+                  <path fill="#34A853" d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z"/>
+                  <path fill="#FBBC05" d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l3.66-2.84z"/>
+                  <path fill="#EA4335" d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z"/>
+                </svg>
+                Sign in
+              </button>
+            )}
           </div>
         </div>
       </nav>
@@ -512,7 +489,6 @@ export default function App() {
               The Best Analytics Tool for Fantasy Basketball
             </p>
 
-            {/* Value props — equal height boxes */}
             {!selectedPlayer && !teamBuilderMode && (
               <div className="flex flex-col sm:flex-row items-stretch gap-4 mb-10 w-full max-w-3xl">
                 <div id="tour-dr-score" className="flex items-center gap-3 bg-slate-900 border border-slate-800 rounded-xl px-4 py-4 flex-1 min-h-[80px]">
@@ -631,12 +607,8 @@ export default function App() {
           </div>
         )}
 
-        {/* Optimize Lineup Panel */}
-        {optimizeMode && (
-          <OptimizeLineup onClose={() => setOptimizeMode(false)} />
-        )}
+        {optimizeMode && <OptimizeLineup onClose={() => setOptimizeMode(false)} />}
 
-        {/* Team Builder Panel */}
         {teamBuilderMode && !optimizeMode && (
           <>
             {teamBuilderError && (
@@ -660,10 +632,7 @@ export default function App() {
                   const currentIndex = slots.indexOf(slot);
                   for (let i = 1; i <= 5; i++) {
                     const checkSlot = slots[(currentIndex + i) % 5];
-                    if (!next[checkSlot]) {
-                      setCurrentSlot(checkSlot);
-                      break;
-                    }
+                    if (!next[checkSlot]) { setCurrentSlot(checkSlot); break; }
                   }
                   return next;
                 });
@@ -686,7 +655,6 @@ export default function App() {
           </>
         )}
 
-        {/* Selected Player View */}
         {!teamBuilderMode && !optimizeMode && selectedPlayer && (
           <div className="mb-16">
             {comparisonMode && comparisonPlayers.length > 1 ? (
@@ -759,7 +727,6 @@ export default function App() {
           </div>
         )}
 
-        {/* My Watchlist */}
         {!teamBuilderMode && !optimizeMode && watchlist.length > 0 && (
           <div id="tour-watchlist" className="mb-16">
             <div className="flex items-center justify-between mb-6">
@@ -791,7 +758,6 @@ export default function App() {
           </div>
         )}
 
-        {/* My Teams */}
         {!teamBuilderMode && !optimizeMode && savedTeams.length > 0 && (
           <div className="mb-16">
             <div className="flex items-center justify-between mb-6">
@@ -823,26 +789,18 @@ export default function App() {
                   >
                     <X className="w-4 h-4" />
                   </button>
-
                   {teamToDelete === team.id && (
                     <div className="absolute inset-0 bg-slate-900/95 backdrop-blur-sm rounded-2xl p-6 flex flex-col items-center justify-center z-30 border border-slate-800">
                       <div className="text-slate-200 font-medium mb-4">Delete this team?</div>
                       <div className="flex gap-3 w-full mb-4">
                         <button
-                          onClick={() => {
-                            setSavedTeams(prev => prev.filter(t => t.id !== team.id));
-                            setTeamToDelete(null);
-                          }}
+                          onClick={() => { setSavedTeams(prev => prev.filter(t => t.id !== team.id)); setTeamToDelete(null); }}
                           className="flex-1 bg-rose-500/10 hover:bg-rose-500/20 text-rose-400 border border-rose-500/20 px-3 py-2 rounded-lg text-sm font-medium transition-colors"
-                        >
-                          Yes, delete
-                        </button>
+                        >Yes, delete</button>
                         <button
                           onClick={() => setTeamToDelete(null)}
                           className="flex-1 bg-slate-800 hover:bg-slate-700 text-slate-300 border border-slate-700 px-3 py-2 rounded-lg text-sm font-medium transition-colors"
-                        >
-                          Cancel
-                        </button>
+                        >Cancel</button>
                       </div>
                       <label className="flex items-center gap-2 text-xs text-slate-400 cursor-pointer">
                         <input
@@ -855,7 +813,6 @@ export default function App() {
                       </label>
                     </div>
                   )}
-
                   <div className="flex justify-between items-start mb-4">
                     <div className="text-lg font-bold text-slate-100">{team.name || `Team ${team.id}`}</div>
                     <div className="text-xs text-slate-500">{new Date(team.timestamp).toLocaleDateString()}</div>
@@ -877,15 +834,9 @@ export default function App() {
                     })}
                   </div>
                   <div className="flex flex-wrap gap-2 mb-6">
-                    <div className="px-2.5 py-1 rounded-full bg-purple-500/10 border border-purple-500/20 text-purple-400 text-xs font-semibold">
-                      DR: {team.scores.teamScore.toFixed(1)}
-                    </div>
-                    <div className="px-2.5 py-1 rounded-full bg-emerald-500/10 border border-emerald-500/20 text-emerald-400 text-xs font-semibold">
-                      OFF: {team.scores.offRating.toFixed(1)}
-                    </div>
-                    <div className="px-2.5 py-1 rounded-full bg-blue-500/10 border border-blue-500/20 text-blue-400 text-xs font-semibold">
-                      DEF: {team.scores.defRating.toFixed(1)}
-                    </div>
+                    <div className="px-2.5 py-1 rounded-full bg-purple-500/10 border border-purple-500/20 text-purple-400 text-xs font-semibold">DR: {team.scores.teamScore.toFixed(1)}</div>
+                    <div className="px-2.5 py-1 rounded-full bg-emerald-500/10 border border-emerald-500/20 text-emerald-400 text-xs font-semibold">OFF: {team.scores.offRating.toFixed(1)}</div>
+                    <div className="px-2.5 py-1 rounded-full bg-blue-500/10 border border-blue-500/20 text-blue-400 text-xs font-semibold">DEF: {team.scores.defRating.toFixed(1)}</div>
                   </div>
                   <div className="flex justify-end">
                     <button
@@ -898,8 +849,7 @@ export default function App() {
                       }}
                       className="flex items-center gap-1 text-sm font-bold text-purple-400 hover:text-purple-300 transition-colors"
                     >
-                      Open in Builder
-                      <ChevronRight className="w-4 h-4" />
+                      Open in Builder <ChevronRight className="w-4 h-4" />
                     </button>
                   </div>
                 </div>
@@ -908,7 +858,6 @@ export default function App() {
           </div>
         )}
 
-        {/* Breakout Alerts */}
         {!teamBuilderMode && !optimizeMode && (
           <div id="tour-breakout" className="mb-16">
             <div className="flex items-center gap-3 mb-6">
@@ -950,7 +899,6 @@ export default function App() {
           </div>
         )}
 
-        {/* Top Prospects Grid */}
         {!teamBuilderMode && !optimizeMode && (
           <div id="tour-prospects">
             <div className="flex items-center justify-between mb-6">
@@ -1011,7 +959,6 @@ export default function App() {
         )}
       </main>
 
-      {/* Footer */}
       <footer className="bg-slate-900 border-t border-slate-800 mt-16">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
           <div className="flex flex-col sm:flex-row items-center justify-between gap-4">
