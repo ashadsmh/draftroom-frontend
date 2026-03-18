@@ -98,8 +98,8 @@ const TIER_STYLES: Record<string, string> = {
   'Top Reserve': 'bg-sky-500/10 border-sky-500/20 text-sky-400',
   'Solid Bench': 'bg-slate-500/10 border-slate-500/20 text-slate-400',
   'Deep Cut':    'bg-slate-700/30 border-slate-700 text-slate-500',
-  'Injured':     'bg-rose-500/10 border-rose-500/20 text-rose-400',
-  'Suspended':   'bg-orange-500/10 border-orange-500/20 text-orange-400',
+  'Injured':   'bg-rose-500/20 text-rose-400 border border-rose-500/30',
+  'Suspended': 'bg-orange-500/20 text-orange-400 border border-orange-500/30',
 };
 
 const TIER_RANK_STYLES: Record<string, string> = {
@@ -110,8 +110,8 @@ const TIER_RANK_STYLES: Record<string, string> = {
   'Top Reserve': 'bg-sky-500/20 text-sky-400 border border-sky-500/30',
   'Solid Bench': 'bg-slate-600/20 text-slate-400 border border-slate-600/30',
   'Deep Cut':    'bg-slate-700/20 text-slate-500 border border-slate-700/30',
-  'Injured':   'bg-rose-500/10 border-rose-500/20 text-rose-400',
-  'Suspended': 'bg-orange-500/10 border-orange-500/20 text-orange-400',
+  'Injured':   'bg-rose-500/20 text-rose-400 border border-rose-500/30',
+  'Suspended': 'bg-orange-500/20 text-orange-400 border border-orange-500/30',
 };
 
 // ─── Sub-components ───────────────────────────────────────────────────────────
