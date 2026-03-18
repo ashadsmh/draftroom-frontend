@@ -14,7 +14,6 @@ Built for serious fantasy players and casual fans alike.
 
 ![](LoadingPage.png)
 
-
 ---
 
 ## Features
@@ -28,6 +27,8 @@ A proprietary efficiency rating (0–100) calculated from the last 10 games usin
 - **Volume Efficiency** — efficiency scaled by usage
 
 Players are tiered as Elite, Star, or Prospect based on their DR Score.
+
+![](StatPanel.png)
 
 ### Optimize Lineup
 Paste your fantasy roster and get ranked start/sit recommendations. Each recommendation is:
