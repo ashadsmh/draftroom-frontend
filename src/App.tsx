@@ -1,5 +1,4 @@
-import TourOverlay from './components/TourOverlay';
-import React, { useState, useEffect, useRef, useMemo } from 'react';
+import React, { useState, useEffect, useRef, useMemo, useCallback } from 'react';
 import { Search, TrendingUp, Star, ChevronRight, Loader2, X, Bookmark, AlertTriangle, Zap, BarChart2 } from 'lucide-react';
 import { getComputedAverages, NbaPlayer, getDraftRoomScore, getTrajectory, getPlayerInfo } from './api/nba';
 import PlayerCard, { abbreviatePosition } from './components/PlayerCard';
@@ -7,10 +6,21 @@ import PlayerPanel from './components/PlayerPanel';
 import ComparisonPanel from './components/ComparisonPanel';
 import TeamBuilder, { TeamBuilderRef } from './components/TeamBuilder';
 import OptimizeLineup from './components/OptimizeLineup';
+import TourOverlay from './components/TourOverlay';
 import { useSearch } from './hooks/useSearch';
 import { usePlayerData } from './hooks/usePlayerData';
-import { useTour } from './hooks/useTour';
+import { useTour, LEBRON_ID } from './hooks/useTour';
 import { ComparisonPlayer, TeamSlot, Player, SavedTeam } from './types';
+
+const LEBRON: Player = {
+  id: LEBRON_ID,
+  name: 'LeBron James',
+  position: 'PF',
+  team: 'LAL',
+  score: null,
+  stats: null,
+  trend: null,
+};
 
 export default function App() {
   const {
@@ -21,8 +31,6 @@ export default function App() {
     isSearching,
     searchError,
   } = useSearch();
-
-  const { isActive, currentStep, startTour, nextStep, prevStep, endTour } = useTour();
 
   const [placeholder, setPlaceholder] = useState('');
   const [isFocused, setIsFocused] = useState(false);
@@ -89,9 +97,7 @@ export default function App() {
   const teamBuilderRef = useRef<TeamBuilderRef>(null);
 
   const [watchlist, setWatchlist] = useState<Player[]>([]);
-  const [isWelcomeModalOpen, setIsWelcomeModalOpen] = useState(true);
   const [teamBuilderError, setTeamBuilderError] = useState<string | null>(null);
-
   const [teamBuilderMode, setTeamBuilderMode] = useState(false);
   const [optimizeMode, setOptimizeMode] = useState(false);
   const [isComparingTeams, setIsComparingTeams] = useState(false);
@@ -103,6 +109,22 @@ export default function App() {
   const [savedTeams, setSavedTeams] = useState<SavedTeam[]>([]);
   const [suppressTeamDeleteConfirm, setSuppressTeamDeleteConfirm] = useState(false);
   const [teamToDelete, setTeamToDelete] = useState<number | null>(null);
+
+  // Tour callbacks — auto-bookmark LeBron when tour starts, remove on end
+  const handleTourStart = useCallback(() => {
+    setWatchlist(prev =>
+      prev.some(p => p.id === LEBRON_ID) ? prev : [...prev, LEBRON]
+    );
+  }, []);
+
+  const handleTourEnd = useCallback(() => {
+    // Keep LeBron bookmarked — nice touch for new users
+  }, []);
+
+  const { isActive, currentStep, startTour, endTour, nextStep, prevStep } = useTour(
+    handleTourStart,
+    handleTourEnd
+  );
 
   useEffect(() => {
     const stored = localStorage.getItem('draftroom_saved_teams');
@@ -423,22 +445,6 @@ export default function App() {
 
   return (
     <div className="min-h-screen bg-slate-950 selection:bg-indigo-500/30">
-      {isWelcomeModalOpen && (
-        <div className="fixed inset-0 bg-slate-950/80 backdrop-blur-sm z-50 flex items-center justify-center p-4">
-          <div className="bg-slate-900 border border-slate-800 rounded-2xl p-8 max-w-md w-full shadow-2xl shadow-slate-900/50 flex flex-col items-center text-center">
-            <h2 className="text-2xl font-bold text-white mb-4">Welcome to DraftRoom</h2>
-            <p className="text-slate-400 mb-8">
-              Our backend runs on a free server that takes up to 60 seconds to wake up on your first request. Search results and player analysis will load shortly — thank you for your patience.
-            </p>
-            <button
-              onClick={() => setIsWelcomeModalOpen(false)}
-              className="bg-purple-600 hover:bg-purple-700 text-white font-medium py-2.5 px-6 rounded-xl transition-colors w-full"
-            >
-              Got it
-            </button>
-          </div>
-        </div>
-      )}
 
       {/* Navigation */}
       <nav className="sticky top-0 z-50 bg-slate-950/80 backdrop-blur-md border-b border-slate-800">
@@ -482,7 +488,7 @@ export default function App() {
               onClick={startTour}
               className="text-sm font-medium text-slate-400 hover:text-slate-200 transition-colors px-3 py-1.5 rounded-lg border border-slate-700 hover:bg-slate-800"
             >
-              How it works
+              Tutorial
             </button>
             <div className="relative group">
               <button className="text-slate-300 hover:text-white font-medium px-4 py-2 rounded-lg transition-colors">
@@ -501,7 +507,7 @@ export default function App() {
       <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
         {/* Hero Section */}
         {!optimizeMode && (
-          <div className="flex flex-col items-center text-center mb-16">
+          <div id="tour-hero" className="flex flex-col items-center text-center mb-16">
             <h1 className="text-5xl md:text-7xl lg:text-8xl font-extrabold text-slate-100 mb-3 tracking-tight">
               DraftRoom
             </h1>
@@ -761,7 +767,7 @@ export default function App() {
 
         {/* My Watchlist */}
         {!teamBuilderMode && !optimizeMode && watchlist.length > 0 && (
-          <div id="tour-prospects" className="mb-16">
+          <div id="tour-watchlist" className="mb-16">
             <div className="flex items-center justify-between mb-6">
               <div className="flex items-center gap-3">
                 <div className="p-2 bg-indigo-500/10 rounded-lg border border-indigo-500/20">
@@ -952,7 +958,7 @@ export default function App() {
 
         {/* Top Prospects Grid */}
         {!teamBuilderMode && !optimizeMode && (
-          <div>
+          <div id="tour-prospects">
             <div className="flex items-center justify-between mb-6">
               <h2 className="text-2xl font-bold text-slate-100">Top Prospects</h2>
               <div className="flex gap-2">
@@ -1033,6 +1039,7 @@ export default function App() {
           </div>
         </div>
       </footer>
+
       <TourOverlay
         isActive={isActive}
         currentStep={currentStep}

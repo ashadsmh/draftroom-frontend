@@ -1,66 +1,78 @@
 import { useState, useEffect, useCallback } from 'react';
 
 const TOUR_KEY = 'draftroom_tour_seen';
+const LEBRON_ID = '2544';
 
 export interface TourStep {
   elementId: string;
   title: string;
   description: string;
-  position: 'top' | 'bottom';
+  position: 'top' | 'bottom' | 'left' | 'right';
 }
 
 export const TOUR_STEPS: TourStep[] = [
   {
-    elementId: 'tour-search',
-    title: '🔍 Search Any Player',
-    description: 'Search any NBA player by name — or try nicknames like "Wemby", "SGA", or "Luka". Pull up their DR Score, season stats, and 5-game projections instantly.',
+    elementId: 'tour-hero',
+    title: '👋 Welcome to DraftRoom',
+    description: 'The analytics tool built for fantasy basketball. One heads up — we run on a free server, so your first search may take up to 60 seconds to load. Worth the wait.',
     position: 'bottom',
   },
   {
-    elementId: 'tour-dr-score',
-    title: '📊 DraftRoom Score',
-    description: 'Our proprietary efficiency metric (0–100) calculated from True Shooting, Playmaking, Defensive Impact, Foul Drawing, and Volume Efficiency — updated every 10 games.',
+    elementId: 'tour-search',
+    title: '🔍 Search Any Player',
+    description: 'Search any NBA player by name. Try nicknames like "Wemby", "SGA", or "Luka". Pull up their DR Score, season stats, and 5-game projections instantly.',
+    position: 'bottom',
+  },
+  {
+    elementId: 'tour-prospects',
+    title: '🏆 Top Prospects',
+    description: 'The highest-rated players by DR Score right now. Filter by position or sort by trending up, most points, or highest score. Click any card to load their full analysis.',
+    position: 'top',
+  },
+  {
+    elementId: 'tour-breakout',
+    title: '⭐ Breakout Alerts',
+    description: 'Younger players whose projected DR Score is trending up significantly — these are the under-the-radar adds worth picking up before anyone else notices.',
+    position: 'top',
+  },
+  {
+    elementId: 'tour-watchlist',
+    title: '🔖 Your Watchlist',
+    description: 'Bookmark any player card to save them here. Your watchlist persists across sessions — perfect for tracking your fantasy targets throughout the season.',
+    position: 'top',
+  },
+  {
+    elementId: 'tour-build-team',
+    title: '🏀 Build Team',
+    description: 'Build any 5-player lineup — mix real rosters or dream teams. See the combined DR Score, Offensive Rating, and Defensive Rating. Compare two squads head-to-head.',
     position: 'bottom',
   },
   {
     elementId: 'tour-optimize',
     title: '⚡ Optimize Lineup',
-    description: 'Paste your fantasy roster and get instant start/sit recommendations. Injury-aware, matchup-adjusted, with reasoning behind every decision.',
+    description: 'Paste your actual fantasy roster and get ranked start/sit recommendations — injury-aware, matchup-adjusted, with clear reasoning behind every pick.',
     position: 'bottom',
-  },
-  {
-    elementId: 'tour-build-team',
-    title: '🏀 Build Team',
-    description: 'Build any 5-player lineup and see their combined DR Score, Offensive Rating, and Defensive Rating. Compare two teams head-to-head.',
-    position: 'bottom',
-  },
-  {
-    elementId: 'tour-breakout',
-    title: '⭐ Breakout Alerts',
-    description: 'Players whose projected DR Score is trending up — younger players gaining momentum worth adding to your roster.',
-    position: 'top',
-  },
-  {
-    elementId: 'tour-prospects',
-    title: '🔖 Watchlist',
-    description: 'Bookmark any player card to save them to your Watchlist. Persists across sessions so you can track your targets.',
-    position: 'top',
   },
 ];
 
-export function useTour() {
+export function useTour(
+  onTourStart?: () => void,
+  onTourEnd?: () => void,
+) {
   const [isActive, setIsActive] = useState(false);
   const [currentStep, setCurrentStep] = useState(0);
 
   const startTour = useCallback(() => {
     setCurrentStep(0);
     setIsActive(true);
-  }, []);
+    onTourStart?.();
+  }, [onTourStart]);
 
   const endTour = useCallback(() => {
     setIsActive(false);
     localStorage.setItem(TOUR_KEY, 'true');
-  }, []);
+    onTourEnd?.();
+  }, [onTourEnd]);
 
   const nextStep = useCallback(() => {
     if (currentStep < TOUR_STEPS.length - 1) {
@@ -74,16 +86,16 @@ export function useTour() {
     if (currentStep > 0) setCurrentStep(s => s - 1);
   }, [currentStep]);
 
-  // Auto-start on first visit
+  // Auto-start on first visit (after welcome modal is gone)
   useEffect(() => {
     const seen = localStorage.getItem(TOUR_KEY);
     if (!seen) {
-      const timer = setTimeout(() => startTour(), 1200);
+      const timer = setTimeout(() => startTour(), 800);
       return () => clearTimeout(timer);
     }
   }, [startTour]);
 
-  // Scroll element into view when step changes
+  // Scroll element into view on step change
   useEffect(() => {
     if (!isActive) return;
     const el = document.getElementById(TOUR_STEPS[currentStep].elementId);
@@ -94,3 +106,5 @@ export function useTour() {
 
   return { isActive, currentStep, startTour, endTour, nextStep, prevStep };
 }
+
+export { LEBRON_ID };

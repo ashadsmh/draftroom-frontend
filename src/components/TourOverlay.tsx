@@ -72,7 +72,7 @@ export default function TourOverlay({ isActive, currentStep, onNext, onPrev, onE
 
   return (
     <>
-      {/* Dark overlay */}
+      {/* Dark overlay with cutout */}
       {highlight && (
         <div className="fixed inset-0 z-[9998] pointer-events-none">
           <svg width="100%" height="100%" style={{ position: 'absolute', inset: 0 }}>
@@ -92,7 +92,7 @@ export default function TourOverlay({ isActive, currentStep, onNext, onPrev, onE
             <rect
               width="100%"
               height="100%"
-              fill="rgba(0,0,0,0.7)"
+              fill="rgba(0,0,0,0.75)"
               mask="url(#tour-mask)"
             />
           </svg>
