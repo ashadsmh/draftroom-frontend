@@ -1,13 +1,13 @@
 import React, { useState, useEffect, useRef, useMemo, useCallback } from 'react';
-import { Search, TrendingUp, Star, ChevronRight, Loader2, X, Bookmark, AlertTriangle, Zap, BarChart2} from 'lucide-react';
+import { Search, TrendingUp, Star, ChevronRight, Loader2, X, Bookmark, AlertTriangle, Zap, BarChart2 } from 'lucide-react';
 import { getComputedAverages, NbaPlayer, getDraftRoomScore, getTrajectory, getPlayerInfo } from './api/nba';
 import PlayerCard, { abbreviatePosition } from './components/PlayerCard';
 import PlayerPanel from './components/PlayerPanel';
 import ComparisonPanel from './components/ComparisonPanel';
 import TeamBuilder, { TeamBuilderRef } from './components/TeamBuilder';
-import UserMenu from './components/UserMenu';
 import OptimizeLineup from './components/OptimizeLineup';
 import TourOverlay from './components/TourOverlay';
+import UserMenu from './components/UserMenu';
 import { useSearch } from './hooks/useSearch';
 import { usePlayerData } from './hooks/usePlayerData';
 import { useTour, LEBRON_ID } from './hooks/useTour';
@@ -460,55 +460,6 @@ export default function App() {
             )}
           </div>
         </div>
-      </nav>
-
-      <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
-        {/* Hero Section */}
-        {!optimizeMode && (
-          <div id="tour-hero" className="flex flex-col items-center text-center mb-16">
-            <h1 className="text-5xl md:text-7xl lg:text-8xl font-extrabold text-slate-100 mb-3 tracking-tight">
-              DraftRoom
-            </h1>
-            <p className="text-lg md:text-xl text-slate-300 mb-8">
-              The Best Analytics Tool for Fantasy Basketball
-            </p>
-
-            {!selectedPlayer && !teamBuilderMode && (
-              <div className="flex flex-col sm:flex-row items-stretch gap-4 mb-10 w-full max-w-3xl">
-                <div id="tour-dr-score" className="flex items-center gap-3 bg-slate-900 border border-slate-800 rounded-xl px-4 py-4 flex-1 min-h-[80px]">
-                  <div className="p-1.5 bg-purple-500/10 rounded-lg border border-purple-500/20 flex-shrink-0">
-                    <BarChart2 className="w-4 h-4 text-purple-400" />
-                  </div>
-                  <div className="text-left">
-                    <div className="text-xs font-bold text-slate-200">DR Score</div>
-                    <div className="text-xs text-slate-500">Efficiency metric: TS%, Playmaking, Defense, Foul Draw & Volume</div>
-                  </div>
-                </div>
-                <div className="flex items-center gap-3 bg-slate-900 border border-slate-800 rounded-xl px-4 py-4 flex-1 min-h-[80px]">
-                  <div className="p-1.5 bg-emerald-500/10 rounded-lg border border-emerald-500/20 flex-shrink-0">
-                    <Zap className="w-4 h-4 text-emerald-400" />
-                  </div>
-                  <div className="text-left">
-                    <div className="text-xs font-bold text-slate-200">Optimize Lineup</div>
-                    <div className="text-xs text-slate-500">Learn who to start/sit from your roster</div>
-                  </div>
-                </div>
-                <div className="flex items-center gap-3 bg-slate-900 border border-slate-800 rounded-xl px-4 py-4 flex-1 min-h-[80px]">
-                  <div className="p-1.5 bg-amber-500/10 rounded-lg border border-amber-500/20 flex-shrink-0">
-                    <TrendingUp className="w-4 h-4 text-amber-400" />
-                  </div>
-                  <div className="text-left">
-                    <div className="text-xs font-bold text-slate-200">5-Game Projections</div>
-                    <div className="text-xs text-slate-500">Predicted stats for a five game forecast</div>
-                  </div>
-                </div>
-              </div>
-            )}
-
-            <div className="relative w-full max-w-2xl">
-              {isAddingToComparison && (
-                <div className="text-sm font-semibold text-slate-400 uppercase tracking-wider mb-2 text-center">
-                  {comparisonPlayers.length === 0
       </nav>
 
       <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
