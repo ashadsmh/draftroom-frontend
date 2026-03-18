@@ -1,3 +1,4 @@
+import TourOverlay from './components/TourOverlay';
 import React, { useState, useEffect, useRef, useMemo } from 'react';
 import { Search, TrendingUp, Star, ChevronRight, Loader2, X, Bookmark, AlertTriangle, Zap, BarChart2 } from 'lucide-react';
 import { getComputedAverages, NbaPlayer, getDraftRoomScore, getTrajectory, getPlayerInfo } from './api/nba';
@@ -21,7 +22,7 @@ export default function App() {
     searchError,
   } = useSearch();
 
-  const { startTour } = useTour();
+  const { isActive, currentStep, startTour, nextStep, prevStep, endTour } = useTour();
 
   const [placeholder, setPlaceholder] = useState('');
   const [isFocused, setIsFocused] = useState(false);
@@ -1032,6 +1033,13 @@ export default function App() {
           </div>
         </div>
       </footer>
+      <TourOverlay
+        isActive={isActive}
+        currentStep={currentStep}
+        onNext={nextStep}
+        onPrev={prevStep}
+        onEnd={endTour}
+      />
     </div>
   );
 }
