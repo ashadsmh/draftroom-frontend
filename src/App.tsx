@@ -8,6 +8,7 @@ import TeamBuilder, { TeamBuilderRef } from './components/TeamBuilder';
 import OptimizeLineup from './components/OptimizeLineup';
 import TourOverlay from './components/TourOverlay';
 import UserMenu from './components/UserMenu';
+import LandingPage from './components/LandingPage';
 import { useSearch } from './hooks/useSearch';
 import { usePlayerData } from './hooks/usePlayerData';
 import { useTour, LEBRON_ID } from './hooks/useTour';
@@ -25,7 +26,21 @@ const LEBRON: Player = {
   trend: null,
 };
 
+const LANDING_KEY = 'draftroom_visited';
+
 export default function App() {
+  const [showLanding, setShowLanding] = useState(() => {
+    return !localStorage.getItem(LANDING_KEY);
+  });
+
+  const handleEnterApp = (mode?: 'optimize') => {
+    localStorage.setItem(LANDING_KEY, 'true');
+    setShowLanding(false);
+    if (mode === 'optimize') {
+      setOptimizeMode(true);
+    }
+  };
+
   const {
     searchQuery,
     setSearchQuery,
@@ -390,6 +405,10 @@ export default function App() {
       : placeholder
   );
 
+  if (showLanding) {
+    return <LandingPage onEnterApp={handleEnterApp} />;
+  }
+
   return (
     <div className="min-h-screen bg-slate-950 selection:bg-indigo-500/30">
 
@@ -438,8 +457,6 @@ export default function App() {
             >
               Tutorial
             </button>
-
-            {/* Auth */}
             {isAuthLoading ? (
               <Loader2 className="w-5 h-5 text-slate-500 animate-spin" />
             ) : user ? (
@@ -463,7 +480,6 @@ export default function App() {
       </nav>
 
       <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
-        {/* Hero Section */}
         {!optimizeMode && (
           <div id="tour-hero" className="flex flex-col items-center text-center mb-16">
             <h1 className="text-5xl md:text-7xl lg:text-8xl font-extrabold text-slate-100 mb-3 tracking-tight">
@@ -806,7 +822,7 @@ export default function App() {
                       const data = team.slots[slot];
                       return (
                         <div key={slot} className="flex items-center justify-between text-sm">
-                          <div className="flex items-center gap-3">
+                          <div className="flex items-center gap-2">
                             <span className="text-xs font-bold text-slate-500 w-6">{slot}</span>
                             <span className="text-slate-300 font-medium">
                               {data ? `${data.player.first_name} ${data.player.last_name}` : 'Empty'}
@@ -946,7 +962,7 @@ export default function App() {
       <footer className="bg-slate-900 border-t border-slate-800 mt-16">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
           <div className="flex flex-col sm:flex-row items-center justify-between gap-4">
-            <div className="flex items-center gap-3">
+            <div className="flex items-center gap-2">
               <TrendingUp className="w-5 h-5 text-purple-500" strokeWidth={2.5} />
               <span className="text-base font-extrabold tracking-tight text-white">DraftRoom</span>
             </div>
