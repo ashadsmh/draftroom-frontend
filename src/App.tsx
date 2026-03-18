@@ -512,16 +512,13 @@ export default function App() {
               DraftRoom
             </h1>
             <p className="text-lg md:text-xl text-slate-300 mb-2">
-              The Analytics Tool for Fantasy Basketball
-            </p>
-            <p className="text-sm text-slate-500 italic mb-8">
-              Know who to start before anyone else does.
+              The Best Analytics Tool for Fantasy Basketball
             </p>
 
             {/* Value props */}
             {!selectedPlayer && !teamBuilderMode && (
               <div className="flex flex-col sm:flex-row items-center gap-4 mb-10 w-full max-w-3xl">
-                <div id="tour-dr-score" className="flex items-center gap-3 bg-slate-900 border border-slate-800 rounded-xl px-4 py-3 flex-1 w-full">
+                <div id="tour-dr-score" className="flex items-center gap-3 bg-slate-900 border border-slate-800 rounded-xl px-4 py-3 flex-1 w-full min-h-[72px]">
                   <div className="p-1.5 bg-purple-500/10 rounded-lg border border-purple-500/20 flex-shrink-0">
                     <BarChart2 className="w-4 h-4 text-purple-400" />
                   </div>
@@ -530,7 +527,7 @@ export default function App() {
                     <div className="text-xs text-slate-500">Efficiency metric: TS%, Playmaking, Defense, Foul Draw & Volume</div>
                   </div>
                 </div>
-                <div className="flex items-center gap-3 bg-slate-900 border border-slate-800 rounded-xl px-4 py-3 flex-1 w-full">
+                <div className="flex items-center gap-3 bg-slate-900 border border-slate-800 rounded-xl px-4 py-3 flex-1 w-full min-h-[72px]">
                   <div className="p-1.5 bg-emerald-500/10 rounded-lg border border-emerald-500/20 flex-shrink-0">
                     <Zap className="w-4 h-4 text-emerald-400" />
                   </div>
@@ -539,7 +536,7 @@ export default function App() {
                     <div className="text-xs text-slate-500">Learn who to start/sit from your roster</div>
                   </div>
                 </div>
-                <div className="flex items-center gap-3 bg-slate-900 border border-slate-800 rounded-xl px-4 py-3 flex-1 w-full">
+                <div className="flex items-center gap-3 bg-slate-900 border border-slate-800 rounded-xl px-4 py-3 flex-1 w-full min-h-[72px]">
                   <div className="p-1.5 bg-amber-500/10 rounded-lg border border-amber-500/20 flex-shrink-0">
                     <TrendingUp className="w-4 h-4 text-amber-400" />
                   </div>
