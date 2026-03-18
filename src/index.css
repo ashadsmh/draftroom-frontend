@@ -24,3 +24,75 @@ body {
     transform: translateY(-6px) scale(1.05);
   }
 }
+
+.draftroom-tour-popover {
+  background: #0f172a !important;
+  border: 1px solid #1e293b !important;
+  border-radius: 16px !important;
+  box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.8) !important;
+  padding: 20px !important;
+  max-width: 320px !important;
+}
+
+.draftroom-tour-popover .driver-popover-title {
+  color: #f1f5f9 !important;
+  font-size: 15px !important;
+  font-weight: 700 !important;
+  margin-bottom: 8px !important;
+}
+
+.draftroom-tour-popover .driver-popover-description {
+  color: #94a3b8 !important;
+  font-size: 13px !important;
+  line-height: 1.6 !important;
+}
+
+.draftroom-tour-popover .driver-popover-footer {
+  margin-top: 16px !important;
+  border-top: 1px solid #1e293b !important;
+  padding-top: 12px !important;
+}
+
+.draftroom-tour-popover .driver-popover-next-btn,
+.draftroom-tour-popover .driver-popover-done-btn {
+  background: #9333ea !important;
+  border: none !important;
+  border-radius: 8px !important;
+  color: white !important;
+  font-size: 12px !important;
+  font-weight: 600 !important;
+  padding: 6px 14px !important;
+}
+
+.draftroom-tour-popover .driver-popover-next-btn:hover,
+.draftroom-tour-popover .driver-popover-done-btn:hover {
+  background: #7c3aed !important;
+}
+
+.draftroom-tour-popover .driver-popover-prev-btn {
+  background: #1e293b !important;
+  border: 1px solid #334155 !important;
+  border-radius: 8px !important;
+  color: #94a3b8 !important;
+  font-size: 12px !important;
+  font-weight: 600 !important;
+  padding: 6px 14px !important;
+}
+
+.draftroom-tour-popover .driver-popover-prev-btn:hover {
+  background: #334155 !important;
+  color: #e2e8f0 !important;
+}
+
+.draftroom-tour-popover .driver-popover-progress-text {
+  color: #64748b !important;
+  font-size: 11px !important;
+}
+
+.draftroom-tour-popover .driver-popover-close-btn {
+  color: #64748b !important;
+}
+
+.draftroom-tour-popover .driver-popover-close-btn:hover {
+  color: #94a3b8 !important;
+}

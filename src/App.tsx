@@ -8,6 +8,7 @@ import TeamBuilder, { TeamBuilderRef } from './components/TeamBuilder';
 import OptimizeLineup from './components/OptimizeLineup';
 import { useSearch } from './hooks/useSearch';
 import { usePlayerData } from './hooks/usePlayerData';
+import { useTour } from './hooks/useTour';
 import { ComparisonPlayer, TeamSlot, Player, SavedTeam } from './types';
 
 export default function App() {
@@ -19,6 +20,8 @@ export default function App() {
     isSearching,
     searchError,
   } = useSearch();
+
+  const { startTour } = useTour();
 
   const [placeholder, setPlaceholder] = useState('');
   const [isFocused, setIsFocused] = useState(false);
@@ -445,6 +448,7 @@ export default function App() {
               <span className="text-xl font-extrabold tracking-tight text-white">DraftRoom</span>
             </button>
             <button
+              id="tour-build-team"
               onClick={() => {
                 setTeamBuilderMode(true);
                 setOptimizeMode(false);
@@ -458,6 +462,7 @@ export default function App() {
               Build Team
             </button>
             <button
+              id="tour-optimize"
               onClick={() => {
                 setOptimizeMode(true);
                 setTeamBuilderMode(false);
@@ -471,14 +476,22 @@ export default function App() {
               Optimize Lineup
             </button>
           </div>
-          <div className="relative group">
-            <button className="text-slate-300 hover:text-white font-medium px-4 py-2 rounded-lg transition-colors">
-              Login
+          <div className="flex items-center gap-2">
+            <button
+              onClick={startTour}
+              className="text-sm font-medium text-slate-400 hover:text-slate-200 transition-colors px-3 py-1.5 rounded-lg border border-slate-700 hover:bg-slate-800"
+            >
+              How it works
             </button>
-            <div className="absolute top-full mt-2 left-1/2 -translate-x-1/2 bg-slate-800 text-slate-300 text-xs font-medium px-3 py-1.5 rounded-lg border border-slate-700 whitespace-nowrap shadow-lg opacity-0 group-hover:opacity-100 transition-opacity duration-200 pointer-events-none">
-              Coming Soon
-              <div className="absolute -top-1.5 left-1/2 -translate-x-1/2 border-l-4 border-r-4 border-b-4 border-transparent border-b-slate-700"></div>
-              <div className="absolute -top-1 left-1/2 -translate-x-1/2 border-l-4 border-r-4 border-b-4 border-transparent border-b-slate-800"></div>
+            <div className="relative group">
+              <button className="text-slate-300 hover:text-white font-medium px-4 py-2 rounded-lg transition-colors">
+                Login
+              </button>
+              <div className="absolute top-full mt-2 left-1/2 -translate-x-1/2 bg-slate-800 text-slate-300 text-xs font-medium px-3 py-1.5 rounded-lg border border-slate-700 whitespace-nowrap shadow-lg opacity-0 group-hover:opacity-100 transition-opacity duration-200 pointer-events-none">
+                Coming Soon
+                <div className="absolute -top-1.5 left-1/2 -translate-x-1/2 border-l-4 border-r-4 border-b-4 border-transparent border-b-slate-700"></div>
+                <div className="absolute -top-1 left-1/2 -translate-x-1/2 border-l-4 border-r-4 border-b-4 border-transparent border-b-slate-800"></div>
+              </div>
             </div>
           </div>
         </div>
@@ -491,23 +504,23 @@ export default function App() {
             <h1 className="text-5xl md:text-7xl lg:text-8xl font-extrabold text-slate-100 mb-3 tracking-tight">
               DraftRoom
             </h1>
-            <p className="text-lg md:text-xl text-slate-400 mb-3">
-              The Analytics Edge for Fantasy Basketball
+            <p className="text-lg md:text-xl text-slate-300 mb-2">
+              The Analytics Tool for Fantasy Basketball
             </p>
             <p className="text-sm text-slate-500 italic mb-8">
               Know who to start before anyone else does.
             </p>
 
-            {/* Value props — hidden when a player is selected or in team builder */}
+            {/* Value props */}
             {!selectedPlayer && !teamBuilderMode && (
               <div className="flex flex-col sm:flex-row items-center gap-4 mb-10 w-full max-w-3xl">
-                <div className="flex items-center gap-3 bg-slate-900 border border-slate-800 rounded-xl px-4 py-3 flex-1 w-full">
+                <div id="tour-dr-score" className="flex items-center gap-3 bg-slate-900 border border-slate-800 rounded-xl px-4 py-3 flex-1 w-full">
                   <div className="p-1.5 bg-purple-500/10 rounded-lg border border-purple-500/20 flex-shrink-0">
                     <BarChart2 className="w-4 h-4 text-purple-400" />
                   </div>
                   <div className="text-left">
                     <div className="text-xs font-bold text-slate-200">DR Score</div>
-                    <div className="text-xs text-slate-500">Proprietary efficiency metric</div>
+                    <div className="text-xs text-slate-500">Efficiency metric: TS%, Playmaking, Defense, Foul Draw & Volume</div>
                   </div>
                 </div>
                 <div className="flex items-center gap-3 bg-slate-900 border border-slate-800 rounded-xl px-4 py-3 flex-1 w-full">
@@ -516,7 +529,7 @@ export default function App() {
                   </div>
                   <div className="text-left">
                     <div className="text-xs font-bold text-slate-200">Optimize Lineup</div>
-                    <div className="text-xs text-slate-500">Injury-aware start/sit decisions</div>
+                    <div className="text-xs text-slate-500">Learn who to start/sit from your roster</div>
                   </div>
                 </div>
                 <div className="flex items-center gap-3 bg-slate-900 border border-slate-800 rounded-xl px-4 py-3 flex-1 w-full">
@@ -525,7 +538,7 @@ export default function App() {
                   </div>
                   <div className="text-left">
                     <div className="text-xs font-bold text-slate-200">5-Game Projections</div>
-                    <div className="text-xs text-slate-500">Opponent-adjusted forecasting</div>
+                    <div className="text-xs text-slate-500">Predicted stats for a five game forecast</div>
                   </div>
                 </div>
               </div>
@@ -546,6 +559,7 @@ export default function App() {
                   <Search className="h-5 w-5 text-slate-500" />
                 </div>
                 <input
+                  id="tour-search"
                   ref={searchInputRef}
                   type="text"
                   className="block w-full pl-11 pr-12 py-4 bg-slate-900 border border-slate-800 rounded-2xl text-slate-100 placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-purple-500/50 focus:border-purple-500 transition-all shadow-lg shadow-slate-900/50 text-lg"
@@ -746,7 +760,7 @@ export default function App() {
 
         {/* My Watchlist */}
         {!teamBuilderMode && !optimizeMode && watchlist.length > 0 && (
-          <div className="mb-16">
+          <div id="tour-prospects" className="mb-16">
             <div className="flex items-center justify-between mb-6">
               <div className="flex items-center gap-3">
                 <div className="p-2 bg-indigo-500/10 rounded-lg border border-indigo-500/20">
@@ -895,7 +909,7 @@ export default function App() {
 
         {/* Breakout Alerts */}
         {!teamBuilderMode && !optimizeMode && (
-          <div className="mb-16">
+          <div id="tour-breakout" className="mb-16">
             <div className="flex items-center gap-3 mb-6">
               <div className="p-2 bg-amber-500/10 rounded-lg border border-amber-500/20">
                 <Star className="w-5 h-5 text-amber-500" />
@@ -996,7 +1010,7 @@ export default function App() {
         )}
       </main>
 
-      {/* Footer — cleaned up */}
+      {/* Footer */}
       <footer className="bg-slate-900 border-t border-slate-800 mt-16">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
           <div className="flex flex-col sm:flex-row items-center justify-between gap-4">
