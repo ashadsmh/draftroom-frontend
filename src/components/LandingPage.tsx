@@ -1,3 +1,4 @@
+import { RadarChart, Radar, PolarGrid, PolarAngleAxis, ResponsiveContainer } from 'recharts';
 import React, { useState } from 'react';
 import { TrendingUp, Zap, BarChart2, ArrowRight, Shield, Clock } from 'lucide-react';
 
@@ -120,7 +121,7 @@ export default function LandingPage({ onEnterApp }: LandingPageProps) {
                 <BarChart2 className="w-4 h-4 text-purple-400" />
               </div>
               <div>
-                <div className="text-xs font-bold text-slate-200">Proprietary DR Score</div>
+                <div className="text-xs font-bold text-slate-200">DR Score</div>
                 <div className="text-xs text-slate-500">Efficiency metric built from TS%, playmaking, defense, foul draw & volume</div>
               </div>
             </div>
@@ -186,24 +187,17 @@ export default function LandingPage({ onEnterApp }: LandingPageProps) {
           {/* DR Score card */}
           <div className="w-full bg-slate-900 border border-slate-800 rounded-2xl p-6 shadow-2xl shadow-slate-900/50">
             {/* Header */}
-            <div className="flex items-start justify-between mb-6">
-              <div className="flex items-center gap-3">
-                <img
-                  src={`https://cdn.nba.com/headshots/nba/latest/1040x760/${player.id}.png`}
-                  alt={player.name}
-                  className="w-20 h-20 rounded-xl object-cover bg-slate-800"
-                  onError={(e) => e.currentTarget.style.display = 'none'}
-                  referrerPolicy="no-referrer"
-                />
-                <div>
-                  <div className="text-sm font-bold text-slate-100">{player.name}</div>
-                  <div className="text-xs text-slate-500">{player.team} · {player.position}</div>
-                </div>
-              </div>
-              <div className="flex flex-col items-end gap-1">
-                <ScoreRing score={player.score} />
-                <span className="text-xs text-slate-500">DR Score</span>
-              </div>
+            <div className="flex flex-col items-center text-center mb-6">
+              <img
+                src={`https://cdn.nba.com/headshots/nba/latest/1040x760/${player.id}.png`}
+                alt={player.name}
+                className="w-20 h-20 rounded-xl object-cover bg-slate-800 mb-3"
+                onError={(e) => e.currentTarget.style.display = 'none'}
+              />
+              <div className="text-sm font-bold text-slate-100 mb-0.5">{player.name}</div>
+              <div className="text-xs text-slate-500 mb-3">{player.team} · {player.position}</div>
+              <ScoreRing score={player.score} />
+              <span className="text-xs text-slate-500 mt-1">DR Score</span>
             </div>
 
             {/* Stats row */}
@@ -220,14 +214,31 @@ export default function LandingPage({ onEnterApp }: LandingPageProps) {
               ))}
             </div>
 
+            {/* Radar chart */}
+            <div className="w-full h-[160px] mb-2">
+            <ResponsiveContainer width="100%" height="100%">
+                <RadarChart data={[
+                { subject: 'Efficiency', A: player.components.ts },
+                { subject: 'Playmaking', A: player.components.playmaking },
+                { subject: 'Defense', A: player.components.defense },
+                { subject: 'Foul Draw', A: player.components.foulDraw },
+                { subject: 'Volume', A: player.components.volume },
+                ]}>
+                <PolarGrid stroke="#334155" />
+                <PolarAngleAxis dataKey="subject" tick={{ fill: '#94a3b8', fontSize: 10 }} />
+                <Radar dataKey="A" stroke="rgb(168,85,247)" strokeOpacity={0.8} fill="rgb(168,85,247)" fillOpacity={0.2} />
+                </RadarChart>
+            </ResponsiveContainer>
+            </div>
+
             {/* Component bars */}
             <div className="flex flex-col gap-2.5">
-              <div className="text-xs font-semibold text-slate-500 uppercase tracking-wider mb-1">Score Breakdown</div>
-              <RadarBar label="Efficiency" value={player.components.ts} color="bg-purple-500" />
-              <RadarBar label="Playmaking" value={player.components.playmaking} color="bg-indigo-500" />
-              <RadarBar label="Defense" value={player.components.defense} color="bg-emerald-500" />
-              <RadarBar label="Foul Draw" value={player.components.foulDraw} color="bg-amber-500" />
-              <RadarBar label="Volume" value={player.components.volume} color="bg-rose-500" />
+            <div className="text-xs font-semibold text-slate-500 uppercase tracking-wider mb-1">Score Breakdown</div>
+            <RadarBar label="Efficiency" value={player.components.ts} color="bg-purple-500" />
+            <RadarBar label="Playmaking" value={player.components.playmaking} color="bg-indigo-500" />
+            <RadarBar label="Defense" value={player.components.defense} color="bg-emerald-500" />
+            <RadarBar label="Foul Draw" value={player.components.foulDraw} color="bg-amber-500" />
+            <RadarBar label="Volume" value={player.components.volume} color="bg-rose-500" />
             </div>
 
             {/* Elite badge */}
