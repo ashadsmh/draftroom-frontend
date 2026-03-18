@@ -110,16 +110,13 @@ export default function App() {
   const [suppressTeamDeleteConfirm, setSuppressTeamDeleteConfirm] = useState(false);
   const [teamToDelete, setTeamToDelete] = useState<number | null>(null);
 
-  // Tour callbacks — auto-bookmark LeBron when tour starts, remove on end
   const handleTourStart = useCallback(() => {
     setWatchlist(prev =>
       prev.some(p => p.id === LEBRON_ID) ? prev : [...prev, LEBRON]
     );
   }, []);
 
-  const handleTourEnd = useCallback(() => {
-    // Keep LeBron bookmarked — nice touch for new users
-  }, []);
+  const handleTourEnd = useCallback(() => {}, []);
 
   const { isActive, currentStep, startTour, endTour, nextStep, prevStep } = useTour(
     handleTourStart,
@@ -511,14 +508,14 @@ export default function App() {
             <h1 className="text-5xl md:text-7xl lg:text-8xl font-extrabold text-slate-100 mb-3 tracking-tight">
               DraftRoom
             </h1>
-            <p className="text-lg md:text-xl text-slate-300 mb-2">
+            <p className="text-lg md:text-xl text-slate-300 mb-8">
               The Best Analytics Tool for Fantasy Basketball
             </p>
 
-            {/* Value props */}
+            {/* Value props — equal height boxes */}
             {!selectedPlayer && !teamBuilderMode && (
-              <div className="flex flex-col sm:flex-row items-center gap-4 mb-10 w-full max-w-3xl">
-                <div id="tour-dr-score" className="flex items-center gap-3 bg-slate-900 border border-slate-800 rounded-xl px-4 py-3 flex-1 w-full min-h-[72px]">
+              <div className="flex flex-col sm:flex-row items-stretch gap-4 mb-10 w-full max-w-3xl">
+                <div id="tour-dr-score" className="flex items-center gap-3 bg-slate-900 border border-slate-800 rounded-xl px-4 py-4 flex-1 min-h-[80px]">
                   <div className="p-1.5 bg-purple-500/10 rounded-lg border border-purple-500/20 flex-shrink-0">
                     <BarChart2 className="w-4 h-4 text-purple-400" />
                   </div>
@@ -527,7 +524,7 @@ export default function App() {
                     <div className="text-xs text-slate-500">Efficiency metric: TS%, Playmaking, Defense, Foul Draw & Volume</div>
                   </div>
                 </div>
-                <div className="flex items-center gap-3 bg-slate-900 border border-slate-800 rounded-xl px-4 py-3 flex-1 w-full min-h-[72px]">
+                <div className="flex items-center gap-3 bg-slate-900 border border-slate-800 rounded-xl px-4 py-4 flex-1 min-h-[80px]">
                   <div className="p-1.5 bg-emerald-500/10 rounded-lg border border-emerald-500/20 flex-shrink-0">
                     <Zap className="w-4 h-4 text-emerald-400" />
                   </div>
@@ -536,7 +533,7 @@ export default function App() {
                     <div className="text-xs text-slate-500">Learn who to start/sit from your roster</div>
                   </div>
                 </div>
-                <div className="flex items-center gap-3 bg-slate-900 border border-slate-800 rounded-xl px-4 py-3 flex-1 w-full min-h-[72px]">
+                <div className="flex items-center gap-3 bg-slate-900 border border-slate-800 rounded-xl px-4 py-4 flex-1 min-h-[80px]">
                   <div className="p-1.5 bg-amber-500/10 rounded-lg border border-amber-500/20 flex-shrink-0">
                     <TrendingUp className="w-4 h-4 text-amber-400" />
                   </div>
