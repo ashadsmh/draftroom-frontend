@@ -1,5 +1,5 @@
 import { useEffect, useCallback } from 'react';
-import { driver } from 'driver.js';
+import { driver } from 'driver.js/dist/driver.esm.js';
 import 'driver.js/dist/driver.css';
 
 const TOUR_KEY = 'draftroom_tour_seen';
