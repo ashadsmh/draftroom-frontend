@@ -643,7 +643,7 @@ export default function App() {
         {/* Selected Player View */}
         {!teamBuilderMode && !optimizeMode && selectedPlayer && (
           <div className="mb-16">
-            {comparisonMode && comparisonPlayers.length >= 1 ? (
+            {comparisonMode && comparisonPlayers.length > 1 ? (
               <ComparisonPanel
                 comparisonPlayers={comparisonPlayers}
                 onAddThird={() => {
@@ -659,11 +659,24 @@ export default function App() {
                   setIsAddingToComparison(false);
                 }}
                 onRemovePlayer={(playerId) => {
-                  setComparisonPlayers(prev => prev.filter(p => p.player.id !== playerId));
-                  setIsAddingToComparison(true);
-                  setSearchQuery('');
-                  searchInputRef.current?.focus();
-                }}
+                const remaining = comparisonPlayers.filter(p => p.player.id !== playerId);
+                if (remaining.length === 1) {
+               // Drop back to single player view
+                  setComparisonMode(false);
+                  setComparisonPlayers([]);
+                  setIsAddingToComparison(false);
+                  setSelectedPlayer(remaining[0].player);
+                  setSelectedPlayerStats(remaining[0].stats);
+                  setSelectedPlayerDraftScore(remaining[0].draftScore);
+                  setSelectedPlayerTrajectory(remaining[0].trajectory);
+                  setSearchQuery(`${remaining[0].player.first_name} ${remaining[0].player.last_name}`);
+                } else {
+                setComparisonPlayers(remaining);
+                setIsAddingToComparison(true);
+                setSearchQuery('');
+                searchInputRef.current?.focus();
+              }
+            }}
               />
             ) : (
               <PlayerPanel
