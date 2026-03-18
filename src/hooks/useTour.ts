@@ -6,7 +6,7 @@ export interface TourStep {
   elementId: string;
   title: string;
   description: string;
-  position: 'top' | 'bottom' | 'left' | 'right';
+  position: 'top' | 'bottom';
 }
 
 export const TOUR_STEPS: TourStep[] = [
