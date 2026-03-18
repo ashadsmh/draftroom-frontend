@@ -74,7 +74,7 @@ export default function UserMenu({ user, onSignOut }: UserMenuProps) {
 
         {/* Dropdown */}
         {isOpen && (
-          <div className="absolute right-0 top-full mt-2 w-56 bg-slate-900 border border-slate-700 rounded-xl shadow-2xl z-50 overflow-hidden">
+          <div className="absolute left-1/2 transform -translate-x-1/2 top-full mt-2 w-56 bg-slate-900 border border-slate-700 rounded-xl shadow-2xl z-50 overflow-hidden">
             <div className="px-4 py-3 border-b border-slate-800">
               <div className="text-sm font-semibold text-slate-100 truncate">{displayName}</div>
               <div className="text-xs text-slate-500 truncate mt-0.5">{user.email}</div>
