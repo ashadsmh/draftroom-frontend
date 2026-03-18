@@ -239,3 +239,54 @@ export const getBatchScores = async (playerIds: number[]): Promise<BatchPlayer[]
     return [];
   }
 };
+
+export interface OptimizedPlayer {
+  id: number;
+  name: string;
+  position: string;
+  team: string;
+  dr_score: number;
+  dr_trend: 'up' | 'down' | 'stable';
+  dr_delta: number;
+  minutes_avg: number;
+  minutes_trend: 'up' | 'down' | 'stable';
+  minutes_delta: number;
+  opp_abbr: string;
+  opp_def_rating: number;
+  opp_rank: number;
+  matchup_label: string;
+  matchup_boost: boolean | null;
+  start_score: number;
+  tier: 'Lock In' | 'Start' | 'Monitor' | 'Sit';
+  reasons: string[];
+  stats: { pts: number; ast: number; reb: number; stl: number; blk: number };
+  recommended_start: boolean;
+  error?: string | null;
+}
+
+export interface OptimizeLineupResponse {
+  players: OptimizedPlayer[];
+  unresolved_names: string[];
+  errored_players: { name: string; error: string }[];
+  total_resolved: number;
+  roster_size: number;
+}
+
+export const optimizeLineup = async (
+  playerNames: string[],
+  season = '2025-26'
+): Promise<OptimizeLineupResponse | null> => {
+  try {
+    const response = await fetchWithRetry(`${BASE_URL}/lineup/optimize`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({ player_names: playerNames, season }),
+    });
+    if (!response.ok) return null;
+    return await response.json();
+  } catch (error) {
+    return null;
+  }
+};

@@ -1,9 +1,14 @@
+import { DraftRoomScoreResponse, TrajectoryResponse, ComputedStats } from './api/nba';
+import { NbaPlayer } from './api/nba';
+
 export interface Player {
-  id: number;
-  first_name: string;
-  last_name: string;
-  full_name: string;
-  is_active: boolean;
+  id: string;
+  name: string;
+  position: string;
+  team: string;
+  score: number | null;
+  stats: { pts: number; ast: number; reb: number } | null;
+  trend: 'up' | 'down' | 'stable' | null;
 }
 
 export interface PlayerInfo {
@@ -57,6 +62,33 @@ export interface DraftRoomScore {
   };
   games_sampled: number;
   season: string;
+}
+
+export interface TeamSlot {
+  player: NbaPlayer;
+  draftScore: DraftRoomScoreResponse;
+  trajectory: TrajectoryResponse;
+  stats: ComputedStats;
+}
+
+export interface SavedTeam {
+  id: number;
+  name: string;
+  timestamp: number;
+  slots: Record<string, TeamSlot | null>;
+  scores: {
+    teamScore: number;
+    offRating: number;
+    defRating: number;
+  };
+}
+
+export interface ComparisonPlayer {
+  player: NbaPlayer;
+  stats: ComputedStats | null;
+  draftScore: DraftRoomScoreResponse | null;
+  trajectory: TrajectoryResponse | null;
+  isLoading: boolean;
 }
 
 export const MVP_WINNERS = new Set([

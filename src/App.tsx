@@ -5,6 +5,7 @@ import PlayerCard, { abbreviatePosition } from './components/PlayerCard';
 import PlayerPanel from './components/PlayerPanel';
 import ComparisonPanel from './components/ComparisonPanel';
 import TeamBuilder, { TeamBuilderRef } from './components/TeamBuilder';
+import OptimizeLineup from './components/OptimizeLineup';
 import { useSearch } from './hooks/useSearch';
 import { usePlayerData } from './hooks/usePlayerData';
 import { ComparisonPlayer, TeamSlot, Player, SavedTeam } from './types';
@@ -88,6 +89,7 @@ export default function App() {
   const [teamBuilderError, setTeamBuilderError] = useState<string | null>(null);
 
   const [teamBuilderMode, setTeamBuilderMode] = useState(false);
+  const [optimizeMode, setOptimizeMode] = useState(false);
   const [isComparingTeams, setIsComparingTeams] = useState(false);
   const [teamSlots, setTeamSlots] = useState<Record<string, TeamSlot | null>>({
     PG: null, SG: null, SF: null, PF: null, C: null
@@ -306,7 +308,6 @@ export default function App() {
       const fetchAndFill = async () => {
         setTeamBuilderError(null);
 
-        // Duplicate player guard
         const activeTeam = teamBuilderRef.current?.getActiveTeam();
         const slotsToCheck = (isComparingTeams && activeTeam === 'B')
           ? (teamBuilderRef.current?.getTeamBSlots() ?? {})
@@ -393,6 +394,7 @@ export default function App() {
     setIsAddingToComparison(false);
     setSearchResults([]);
     setTeamBuilderMode(false);
+    setOptimizeMode(false);
     setTeamSlots({ PG: null, SG: null, SF: null, PF: null, C: null });
     setCurrentSlot('PG');
     setTeamBuilderError(null);
@@ -437,7 +439,7 @@ export default function App() {
       {/* Navigation */}
       <nav className="sticky top-0 z-50 bg-slate-950/80 backdrop-blur-md border-b border-slate-800">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between">
-          <div className="flex items-center gap-6">
+          <div className="flex items-center gap-3">
             <button onClick={handleResetApp} className="flex items-center gap-2 cursor-pointer border-none bg-transparent p-0">
               <TrendingUp className="w-8 h-8 text-purple-500" strokeWidth={2.5} />
               <span className="text-xl font-extrabold tracking-tight text-white">DraftRoom</span>
@@ -445,6 +447,7 @@ export default function App() {
             <button
               onClick={() => {
                 setTeamBuilderMode(true);
+                setOptimizeMode(false);
                 setSelectedPlayer(null);
                 setComparisonMode(false);
                 setComparisonPlayers([]);
@@ -453,6 +456,19 @@ export default function App() {
               className="text-sm font-medium text-slate-300 hover:text-white transition-colors px-3 py-1.5 rounded-lg border border-slate-700 hover:bg-slate-800"
             >
               Build Team
+            </button>
+            <button
+              onClick={() => {
+                setOptimizeMode(true);
+                setTeamBuilderMode(false);
+                setSelectedPlayer(null);
+                setComparisonMode(false);
+                setComparisonPlayers([]);
+                window.scrollTo({ top: 0, behavior: 'smooth' });
+              }}
+              className="text-sm font-medium text-slate-300 hover:text-white transition-colors px-3 py-1.5 rounded-lg border border-slate-700 hover:bg-slate-800"
+            >
+              Optimize Lineup
             </button>
           </div>
           <div className="relative group">
@@ -469,106 +485,113 @@ export default function App() {
       </nav>
 
       <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
-        {/* Hero Section */}
-        <div className="flex flex-col items-center text-center mb-16">
-          <h1 className="text-5xl md:text-7xl lg:text-8xl font-extrabold text-slate-100 mb-4 tracking-tight flex justify-center">
-            DraftRoom
-          </h1>
-          <p className="text-lg md:text-xl text-slate-400 italic max-w-2xl mb-10">
-            Evaluate Talent with Precision
-          </p>
+        {/* Hero Section — hidden in optimize mode */}
+        {!optimizeMode && (
+          <div className="flex flex-col items-center text-center mb-16">
+            <h1 className="text-5xl md:text-7xl lg:text-8xl font-extrabold text-slate-100 mb-4 tracking-tight flex justify-center">
+              DraftRoom
+            </h1>
+            <p className="text-lg md:text-xl text-slate-400 italic max-w-2xl mb-10">
+              Evaluate Talent with Precision
+            </p>
 
-          <div className="relative w-full max-w-2xl">
-            {isAddingToComparison && (
-              <div className="text-sm font-semibold text-slate-400 uppercase tracking-wider mb-2 text-center">
-                {comparisonPlayers.length === 0
-                  ? `Search for a player to compare`
-                  : comparisonPlayers.length === 1
-                  ? `Comparing against ${comparisonPlayers[0].player.first_name} ${comparisonPlayers[0].player.last_name} — search a replacement`
-                  : `Add a third player to compare`}
+            <div className="relative w-full max-w-2xl">
+              {isAddingToComparison && (
+                <div className="text-sm font-semibold text-slate-400 uppercase tracking-wider mb-2 text-center">
+                  {comparisonPlayers.length === 0
+                    ? `Search for a player to compare`
+                    : comparisonPlayers.length === 1
+                    ? `Comparing against ${comparisonPlayers[0].player.first_name} ${comparisonPlayers[0].player.last_name} — search a replacement`
+                    : `Add a third player to compare`}
+                </div>
+              )}
+              <div className="relative">
+                <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none">
+                  <Search className="h-5 w-5 text-slate-500" />
+                </div>
+                <input
+                  ref={searchInputRef}
+                  type="text"
+                  className="block w-full pl-11 pr-12 py-4 bg-slate-900 border border-slate-800 rounded-2xl text-slate-100 placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-purple-500/50 focus:border-purple-500 transition-all shadow-lg shadow-slate-900/50 text-lg"
+                  placeholder={currentPlaceholder}
+                  value={searchQuery}
+                  onChange={(e) => setSearchQuery(e.target.value)}
+                  onFocus={() => setIsFocused(true)}
+                  onBlur={() => {
+                    setIsFocused(false);
+                    setTimeout(() => setSearchResults([]), 200);
+                  }}
+                />
+                {isSearching && (
+                  <div className="absolute inset-y-0 right-0 pr-4 flex items-center pointer-events-none">
+                    <Loader2 className="h-5 w-5 text-purple-500 animate-spin" />
+                  </div>
+                )}
               </div>
-            )}
-            <div className="relative">
-              <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none">
-                <Search className="h-5 w-5 text-slate-500" />
-              </div>
-              <input
-                ref={searchInputRef}
-                type="text"
-                className="block w-full pl-11 pr-12 py-4 bg-slate-900 border border-slate-800 rounded-2xl text-slate-100 placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-purple-500/50 focus:border-purple-500 transition-all shadow-lg shadow-slate-900/50 text-lg"
-                placeholder={currentPlaceholder}
-                value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)}
-                onFocus={() => setIsFocused(true)}
-                onBlur={() => {
-                  setIsFocused(false);
-                  setTimeout(() => setSearchResults([]), 200);
-                }}
-              />
-              {isSearching && (
-                <div className="absolute inset-y-0 right-0 pr-4 flex items-center pointer-events-none">
-                  <Loader2 className="h-5 w-5 text-purple-500 animate-spin" />
+
+              {/* Dropdown */}
+              {searchResults.length > 0 && isFocused && (
+                <div className="absolute top-full left-0 right-0 mt-2 bg-slate-900 border border-slate-800 rounded-xl shadow-2xl overflow-hidden z-50 max-h-80 overflow-y-auto">
+                  {searchResults.map((player) => (
+                    <button
+                      key={player.id}
+                      className="w-full text-left px-4 py-3 hover:bg-slate-800 transition-colors flex items-center justify-between border-b border-slate-800/50 last:border-0"
+                      onMouseDown={() => handlePlayerSelect(player)}
+                    >
+                      <div>
+                        <div className="text-slate-100 font-medium flex items-center gap-2">
+                          {player.first_name} {player.last_name}
+                        </div>
+                      </div>
+                    </button>
+                  ))}
+                </div>
+              )}
+
+              {/* Search Error */}
+              {searchError && (
+                <div className="absolute top-full left-0 right-0 mt-2 text-red-400 text-sm text-center">
+                  {searchError}
+                </div>
+              )}
+
+              {/* Pending Player Prompt */}
+              {pendingPlayer && (
+                <div className="absolute top-full left-0 right-0 mt-2 bg-slate-900 border border-slate-800 rounded-xl shadow-2xl p-4 z-50 flex items-center justify-between">
+                  <span className="text-slate-300 text-sm font-medium">This will end your current comparison. Continue?</span>
+                  <div className="flex items-center gap-3">
+                    <button
+                      onClick={() => { setPendingPlayer(null); setSearchQuery(''); }}
+                      className="px-3 py-1.5 text-sm font-medium text-slate-300 bg-slate-800 hover:bg-slate-700 rounded-lg transition-colors"
+                    >
+                      Cancel
+                    </button>
+                    <button
+                      onClick={() => {
+                        const p = pendingPlayer;
+                        setPendingPlayer(null);
+                        setComparisonMode(false);
+                        setComparisonPlayers([]);
+                        handlePlayerSelect(p, true);
+                      }}
+                      className="px-3 py-1.5 text-sm font-medium text-white bg-red-600 hover:bg-red-700 rounded-lg transition-colors"
+                    >
+                      End Comparison
+                    </button>
+                  </div>
                 </div>
               )}
             </div>
-
-            {/* Dropdown */}
-            {searchResults.length > 0 && isFocused && (
-              <div className="absolute top-full left-0 right-0 mt-2 bg-slate-900 border border-slate-800 rounded-xl shadow-2xl overflow-hidden z-50 max-h-80 overflow-y-auto">
-                {searchResults.map((player) => (
-                  <button
-                    key={player.id}
-                    className="w-full text-left px-4 py-3 hover:bg-slate-800 transition-colors flex items-center justify-between border-b border-slate-800/50 last:border-0"
-                    onMouseDown={() => handlePlayerSelect(player)}
-                  >
-                    <div>
-                      <div className="text-slate-100 font-medium flex items-center gap-2">
-                        {player.first_name} {player.last_name}
-                      </div>
-                    </div>
-                  </button>
-                ))}
-              </div>
-            )}
-
-            {/* Search Error */}
-            {searchError && (
-              <div className="absolute top-full left-0 right-0 mt-2 text-red-400 text-sm text-center">
-                {searchError}
-              </div>
-            )}
-
-            {/* Pending Player Prompt */}
-            {pendingPlayer && (
-              <div className="absolute top-full left-0 right-0 mt-2 bg-slate-900 border border-slate-800 rounded-xl shadow-2xl p-4 z-50 flex items-center justify-between">
-                <span className="text-slate-300 text-sm font-medium">This will end your current comparison. Continue?</span>
-                <div className="flex items-center gap-3">
-                  <button
-                    onClick={() => { setPendingPlayer(null); setSearchQuery(''); }}
-                    className="px-3 py-1.5 text-sm font-medium text-slate-300 bg-slate-800 hover:bg-slate-700 rounded-lg transition-colors"
-                  >
-                    Cancel
-                  </button>
-                  <button
-                    onClick={() => {
-                      const p = pendingPlayer;
-                      setPendingPlayer(null);
-                      setComparisonMode(false);
-                      setComparisonPlayers([]);
-                      handlePlayerSelect(p, true);
-                    }}
-                    className="px-3 py-1.5 text-sm font-medium text-white bg-red-600 hover:bg-red-700 rounded-lg transition-colors"
-                  >
-                    End Comparison
-                  </button>
-                </div>
-              </div>
-            )}
           </div>
-        </div>
+        )}
+
+        {/* Optimize Lineup Panel */}
+        {optimizeMode && (
+          <OptimizeLineup onClose={() => setOptimizeMode(false)} />
+        )}
 
         {/* Team Builder Panel */}
-        {teamBuilderMode && (
+        {teamBuilderMode && !optimizeMode && (
           <>
             {teamBuilderError && (
               <div className="max-w-5xl mx-auto mb-4">
@@ -618,7 +641,7 @@ export default function App() {
         )}
 
         {/* Selected Player View */}
-        {!teamBuilderMode && selectedPlayer && (
+        {!teamBuilderMode && !optimizeMode && selectedPlayer && (
           <div className="mb-16">
             {comparisonMode && comparisonPlayers.length > 1 ? (
               <ComparisonPanel
@@ -679,7 +702,7 @@ export default function App() {
         )}
 
         {/* My Watchlist */}
-        {!teamBuilderMode && watchlist.length > 0 && (
+        {!teamBuilderMode && !optimizeMode && watchlist.length > 0 && (
           <div className="mb-16">
             <div className="flex items-center justify-between mb-6">
               <div className="flex items-center gap-3">
@@ -711,7 +734,7 @@ export default function App() {
         )}
 
         {/* My Teams */}
-        {!teamBuilderMode && savedTeams.length > 0 && (
+        {!teamBuilderMode && !optimizeMode && savedTeams.length > 0 && (
           <div className="mb-16">
             <div className="flex items-center justify-between mb-6">
               <div className="flex items-center gap-3">
@@ -810,6 +833,7 @@ export default function App() {
                     <button
                       onClick={() => {
                         setTeamBuilderMode(true);
+                        setOptimizeMode(false);
                         setTeamSlots(team.slots);
                         setCurrentSlot('PG');
                         window.scrollTo({ top: 0, behavior: 'smooth' });
@@ -827,7 +851,7 @@ export default function App() {
         )}
 
         {/* Breakout Alerts */}
-        {!teamBuilderMode && (
+        {!teamBuilderMode && !optimizeMode && (
           <div className="mb-16">
             <div className="flex items-center gap-3 mb-6">
               <div className="p-2 bg-amber-500/10 rounded-lg border border-amber-500/20">
@@ -869,7 +893,7 @@ export default function App() {
         )}
 
         {/* Top Prospects Grid */}
-        {!teamBuilderMode && (
+        {!teamBuilderMode && !optimizeMode && (
           <div>
             <div className="flex items-center justify-between mb-6">
               <h2 className="text-2xl font-bold text-slate-100">Top Prospects</h2>

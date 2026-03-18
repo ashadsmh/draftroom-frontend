@@ -1,0 +1,337 @@
+import React, { useState } from 'react';
+import {
+  Loader2, TrendingUp, TrendingDown, Minus, X,
+  ChevronDown, ChevronUp, AlertTriangle, Zap
+} from 'lucide-react';
+import { getScoreColor, getScoreBg } from '../types';
+import { optimizeLineup, OptimizedPlayer, OptimizeLineupResponse } from '../api/nba';
+
+interface OptimizeLineupProps {
+  onClose: () => void;
+}
+
+const TierBadge = ({ tier }: { tier: OptimizedPlayer['tier'] }) => {
+  const styles: Record<string, string> = {
+    'Lock In': 'bg-emerald-500/10 border-emerald-500/20 text-emerald-400',
+    'Start':   'bg-purple-500/10 border-purple-500/20 text-purple-400',
+    'Monitor': 'bg-amber-500/10 border-amber-500/20 text-amber-400',
+    'Sit':     'bg-rose-500/10 border-rose-500/20 text-rose-400',
+  };
+  const rankColor: Record<string, string> = {
+    'Lock In': 'bg-emerald-500/20 text-emerald-400 border-emerald-500/30',
+    'Start':   'bg-purple-500/20 text-purple-400 border-purple-500/30',
+    'Monitor': 'bg-amber-500/20 text-amber-400 border-amber-500/30',
+    'Sit':     'bg-rose-500/20 text-rose-400 border-rose-500/30',
+  };
+  return (
+    <span className={`inline-flex items-center px-2 py-0.5 rounded-full border text-xs font-bold uppercase tracking-wide ${styles[tier]}`}>
+      {tier}
+    </span>
+  );
+};
+
+const TrendIcon = ({ trend }: { trend: 'up' | 'down' | 'stable' }) => {
+  if (trend === 'up') return <TrendingUp className="w-3.5 h-3.5 text-emerald-400" />;
+  if (trend === 'down') return <TrendingDown className="w-3.5 h-3.5 text-rose-400" />;
+  return <Minus className="w-3.5 h-3.5 text-slate-500" />;
+};
+
+const ReasonPill = ({ reason }: { reason: string }) => {
+  const isGood = reason.includes('🔥') || reason.includes('trending up') || reason.includes('Minutes up') || reason.includes('Elite') || reason.includes('Strong');
+  const isBad = reason.includes('⚠️') || reason.includes('trending down') || reason.includes('reduced role');
+  const base = 'text-xs px-2.5 py-1 rounded-lg border ';
+  const style = isGood
+    ? base + 'bg-emerald-500/10 border-emerald-500/20 text-emerald-300'
+    : isBad
+    ? base + 'bg-rose-500/10 border-rose-500/20 text-rose-300'
+    : base + 'bg-slate-800/80 border-slate-700/50 text-slate-400';
+  return <span className={style}>{reason}</span>;
+};
+
+const PlayerResultCard = ({ player, rank, defaultExpanded = false }: {
+  player: OptimizedPlayer;
+  rank: number;
+  defaultExpanded?: boolean;
+}) => {
+  const [expanded, setExpanded] = useState(defaultExpanded);
+  const tierRankColor: Record<string, string> = {
+    'Lock In': 'bg-emerald-500/20 text-emerald-400 border border-emerald-500/30',
+    'Start':   'bg-purple-500/20 text-purple-400 border border-purple-500/30',
+    'Monitor': 'bg-amber-500/20 text-amber-400 border border-amber-500/30',
+    'Sit':     'bg-rose-500/20 text-rose-400 border border-rose-500/30',
+  };
+
+  return (
+    <div className="bg-slate-900 border border-slate-800 rounded-2xl overflow-hidden transition-all">
+      {/* Header row — always visible */}
+      <button
+        onClick={() => setExpanded(e => !e)}
+        className="w-full text-left p-5 flex items-center gap-4 hover:bg-slate-800/40 transition-colors"
+      >
+        {/* Rank circle */}
+        <div className={`w-8 h-8 rounded-full flex items-center justify-center text-sm font-black flex-shrink-0 ${tierRankColor[player.tier]}`}>
+          {rank}
+        </div>
+
+        {/* Headshot */}
+        <div className="w-10 h-10 rounded-lg bg-slate-800 overflow-hidden flex-shrink-0 border border-slate-700">
+          <img
+            src={`https://cdn.nba.com/headshots/nba/latest/1040x760/${player.id}.png`}
+            alt={player.name}
+            className="w-full h-full object-cover"
+            onError={(e) => (e.currentTarget.style.display = 'none')}
+            referrerPolicy="no-referrer"
+          />
+        </div>
+
+        {/* Name + position */}
+        <div className="flex-1 min-w-0">
+          <div className="flex items-center gap-2 mb-0.5 flex-wrap">
+            <span className="text-slate-100 font-bold truncate">{player.name}</span>
+            {player.position && (
+              <span className="text-xs font-semibold px-2 py-0.5 rounded bg-slate-800 text-slate-300 border border-slate-700 flex-shrink-0">
+                {player.position}
+              </span>
+            )}
+            <span className="text-xs text-slate-500 flex-shrink-0">{player.team}</span>
+          </div>
+          <div className="flex items-center gap-2 flex-wrap">
+            <TierBadge tier={player.tier} />
+            <div className="flex items-center gap-1 text-xs text-slate-500">
+              <TrendIcon trend={player.minutes_trend} />
+              <span>{player.minutes_avg.toFixed(0)} mpg</span>
+            </div>
+          </div>
+        </div>
+
+        {/* DR Score */}
+        <div className="flex flex-col items-end flex-shrink-0 gap-1">
+          <div className={`flex items-center justify-center w-12 h-12 rounded-xl border ${getScoreBg(player.dr_score)}`}>
+            <span className={`text-xl font-bold ${getScoreColor(player.dr_score)}`}>
+              {player.dr_score.toFixed(0)}
+            </span>
+          </div>
+          <span className="text-[9px] font-medium text-slate-500 uppercase tracking-wider">DR Score</span>
+        </div>
+
+        {/* Expand toggle */}
+        <div className="text-slate-500 flex-shrink-0">
+          {expanded ? <ChevronUp className="w-4 h-4" /> : <ChevronDown className="w-4 h-4" />}
+        </div>
+      </button>
+
+      {/* Expanded detail */}
+      {expanded && (
+        <div className="px-5 pb-5 border-t border-slate-800">
+          {/* Stats row */}
+          <div className="grid grid-cols-5 gap-2 mt-4 mb-4">
+            {[
+              { label: 'PTS', val: player.stats.pts },
+              { label: 'AST', val: player.stats.ast },
+              { label: 'REB', val: player.stats.reb },
+              { label: 'STL', val: player.stats.stl },
+              { label: 'BLK', val: player.stats.blk },
+            ].map(s => (
+              <div key={s.label} className="bg-slate-950/50 rounded-lg p-2.5 border border-slate-800/50 text-center">
+                <div className="text-xs text-slate-500 mb-0.5">{s.label}</div>
+                <div className="text-sm font-bold text-slate-200">{s.val.toFixed(1)}</div>
+              </div>
+            ))}
+          </div>
+
+          {/* Reasons */}
+          <div className="flex flex-wrap gap-2">
+            {player.reasons.map((r, i) => (
+              <ReasonPill key={i} reason={r} />
+            ))}
+          </div>
+        </div>
+      )}
+    </div>
+  );
+};
+
+export default function OptimizeLineup({ onClose }: OptimizeLineupProps) {
+  const [input, setInput] = useState('');
+  const [isLoading, setIsLoading] = useState(false);
+  const [results, setResults] = useState<OptimizeLineupResponse | null>(null);
+  const [error, setError] = useState<string | null>(null);
+  const [fullRosterExpanded, setFullRosterExpanded] = useState(false);
+
+  const parsedNames = input
+    .split(/[\n,]+/)
+    .map(s => s.trim())
+    .filter(Boolean);
+
+  const handleOptimize = async () => {
+    if (parsedNames.length < 2) return;
+    setIsLoading(true);
+    setError(null);
+    try {
+      const res = await optimizeLineup(parsedNames);
+      if (!res) throw new Error('No response from server.');
+      setResults(res);
+    } catch (e: any) {
+      setError(e.message || 'Something went wrong.');
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const handleReset = () => {
+    setResults(null);
+    setError(null);
+    setInput('');
+    setFullRosterExpanded(false);
+  };
+
+  const starters = results?.players.filter(p => p.recommended_start) ?? [];
+  const bench = results?.players.filter(p => !p.recommended_start) ?? [];
+
+  return (
+    <div className="w-full max-w-3xl mx-auto mb-16">
+      {/* Header */}
+      <div className="flex items-center justify-between mb-8">
+        <div className="flex items-center gap-3">
+          <div className="p-2 bg-purple-500/10 rounded-lg border border-purple-500/20">
+            <Zap className="w-5 h-5 text-purple-400" />
+          </div>
+          <div>
+            <h2 className="text-2xl font-bold text-slate-100">Optimize Lineup</h2>
+            <p className="text-sm text-slate-400">Paste your fantasy roster to find your best 5 starters</p>
+          </div>
+        </div>
+        <button
+          onClick={results ? handleReset : onClose}
+          className="text-slate-500 hover:text-slate-300 transition-colors p-2 rounded-lg hover:bg-slate-800"
+        >
+          {results ? (
+            <span className="text-sm font-medium text-slate-400 hover:text-slate-200 px-3 py-1.5 rounded-lg border border-slate-700 hover:bg-slate-800 transition-colors">
+              Start Over
+            </span>
+          ) : (
+            <X className="w-5 h-5" />
+          )}
+        </button>
+      </div>
+
+      {/* Step 1 — Input */}
+      {!results && (
+        <div className="bg-slate-900 border border-slate-800 rounded-2xl p-6 shadow-xl shadow-slate-900/50">
+          <label className="block text-sm font-semibold text-slate-400 uppercase tracking-wider mb-3">
+            Your Roster
+          </label>
+          <textarea
+            className="w-full min-h-[180px] bg-slate-950/70 border border-slate-700 rounded-xl px-4 py-3 text-slate-100 placeholder-slate-600 focus:outline-none focus:ring-2 focus:ring-purple-500/50 focus:border-purple-500 transition-all resize-none text-sm leading-relaxed"
+            placeholder={`Paste your roster, one player per line or comma-separated:\n\nShai Gilgeous-Alexander\nPayton Prichard\nCam Thomas\nJalen Brunson\nBam Adebayo\n...`}
+            value={input}
+            onChange={e => setInput(e.target.value)}
+          />
+          <div className="flex items-center justify-between mt-3">
+            <span className="text-xs text-slate-500">
+              {parsedNames.length > 0
+                ? `${parsedNames.length} player${parsedNames.length !== 1 ? 's' : ''} detected`
+                : 'Enter player names above'}
+            </span>
+          </div>
+
+          {error && (
+            <div className="flex items-center gap-2 mt-4 bg-rose-500/10 border border-rose-500/20 text-rose-400 text-sm px-4 py-3 rounded-xl">
+              <AlertTriangle className="w-4 h-4 flex-shrink-0" />
+              {error}
+            </div>
+          )}
+
+          <button
+            onClick={handleOptimize}
+            disabled={parsedNames.length < 2 || isLoading}
+            className="mt-4 w-full bg-purple-600 hover:bg-purple-500 disabled:opacity-40 disabled:cursor-not-allowed text-white font-semibold py-3 px-6 rounded-xl transition-colors flex items-center justify-center gap-2"
+          >
+            {isLoading ? (
+              <>
+                <Loader2 className="w-4 h-4 animate-spin" />
+                Analyzing your roster...
+              </>
+            ) : (
+              <>
+                <Zap className="w-4 h-4" />
+                Optimize Lineup
+              </>
+            )}
+          </button>
+        </div>
+      )}
+
+      {/* Step 2 — Results */}
+      {results && (
+        <div className="flex flex-col gap-6">
+          {/* Unresolved warning */}
+          {results.unresolved_names.length > 0 && (
+            <div className="flex items-start gap-3 bg-amber-500/10 border border-amber-500/20 text-amber-300 text-sm px-4 py-3 rounded-xl">
+              <AlertTriangle className="w-4 h-4 flex-shrink-0 mt-0.5" />
+              <span>
+                Could not find: <span className="font-semibold">{results.unresolved_names.join(', ')}</span> — check spelling
+              </span>
+            </div>
+          )}
+
+          {/* Recommended Starters */}
+          <div>
+            <div className="flex items-center gap-3 mb-4">
+              <div className="p-1.5 bg-emerald-500/10 rounded-lg border border-emerald-500/20">
+                <TrendingUp className="w-4 h-4 text-emerald-400" />
+              </div>
+              <h3 className="text-lg font-bold text-slate-100">Recommended Starters</h3>
+              <span className="text-xs text-slate-500 bg-slate-800 px-2 py-0.5 rounded-full border border-slate-700">
+                Top {starters.length}
+              </span>
+            </div>
+            <div className="flex flex-col gap-3">
+              {starters.map((player, i) => (
+                <PlayerResultCard
+                  key={player.id}
+                  player={player}
+                  rank={i + 1}
+                  defaultExpanded={true}
+                />
+              ))}
+            </div>
+          </div>
+
+          {/* Full Roster */}
+          {bench.length > 0 && (
+            <div>
+              <button
+                onClick={() => setFullRosterExpanded(e => !e)}
+                className="flex items-center gap-2 text-sm font-semibold text-slate-400 hover:text-slate-200 transition-colors mb-3"
+              >
+                {fullRosterExpanded ? <ChevronUp className="w-4 h-4" /> : <ChevronDown className="w-4 h-4" />}
+                Full Roster ({bench.length} remaining)
+              </button>
+              {fullRosterExpanded && (
+                <div className="flex flex-col gap-2">
+                  {bench.map((player, i) => (
+                    <div key={player.id} className="opacity-60 hover:opacity-100 transition-opacity">
+                      <PlayerResultCard player={player} rank={starters.length + i + 1} />
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+          )}
+
+          {/* Errored players */}
+          {results.errored_players.length > 0 && (
+            <div className="flex flex-wrap gap-2">
+              {results.errored_players.map((p, i) => (
+                <span key={i} className="text-xs px-3 py-1.5 rounded-lg bg-rose-500/10 border border-rose-500/20 text-rose-400">
+                  Could not load: {p.name}
+                </span>
+              ))}
+            </div>
+          )}
+        </div>
+      )}
+    </div>
+  );
+}
