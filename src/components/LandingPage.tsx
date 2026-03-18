@@ -96,11 +96,11 @@ export default function LandingPage({ onEnterApp }: LandingPageProps) {
         </button>
       </nav>
 
-      <main className="flex-1 flex flex-col lg:flex-row items-center justify-center gap-12 px-6 py-12 max-w-7xl mx-auto w-full">
-
+      <main className="flex-1 flex flex-col lg:flex-row items-start justify-center gap-12 px-6 py-8 max-w-7xl mx-auto w-full">
+        
         {/* Left — copy */}
-        <div className="flex-1 flex flex-col items-start max-w-xl">
-          <div className="inline-flex items-center gap-2 bg-purple-500/10 border border-purple-500/20 rounded-full px-3 py-1 mb-6">
+          <div className="flex-1 flex flex-col items-start max-w-xl lg:pt-8">
+            <div className="inline-flex items-center gap-2 bg-purple-500/10 border border-purple-500/20 rounded-full px-3 py-1 mb-6">
             <div className="w-1.5 h-1.5 bg-purple-400 rounded-full animate-pulse" />
             <span className="text-xs font-semibold text-purple-400 uppercase tracking-wider">Fantasy Basketball Analytics</span>
           </div>
@@ -233,12 +233,12 @@ export default function LandingPage({ onEnterApp }: LandingPageProps) {
 
             {/* Component bars */}
             <div className="flex flex-col gap-2.5">
-            <div className="text-xs font-semibold text-slate-500 uppercase tracking-wider mb-1">Score Breakdown</div>
-            <RadarBar label="Efficiency" value={player.components.ts} color="bg-purple-500" />
-            <RadarBar label="Playmaking" value={player.components.playmaking} color="bg-indigo-500" />
-            <RadarBar label="Defense" value={player.components.defense} color="bg-emerald-500" />
-            <RadarBar label="Foul Draw" value={player.components.foulDraw} color="bg-amber-500" />
-            <RadarBar label="Volume" value={player.components.volume} color="bg-rose-500" />
+                <div className="text-xs font-semibold text-slate-500 uppercase tracking-wider mb-1">Score Breakdown</div>
+                <RadarBar label="Efficiency" value={player.components.ts} color="bg-purple-500" />
+                <RadarBar label="Playmaking" value={player.components.playmaking} color="bg-indigo-500" />
+                <RadarBar label="Defense" value={player.components.defense} color="bg-emerald-500" />
+                <RadarBar label="Foul Draw" value={player.components.foulDraw} color="bg-amber-500" />
+                <RadarBar label="Volume" value={player.components.volume} color="bg-rose-500" />
             </div>
 
             {/* Elite badge */}
