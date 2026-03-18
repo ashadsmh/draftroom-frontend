@@ -16,7 +16,7 @@ interface ResolvedTag {
   status: 'resolving' | 'found' | 'not_found';
 }
 
-// ─── Nickname map (client-side pre-processing) ────────────────────────────────
+// ─── Nickname map ─────────────────────────────────────────────────────────────
 
 const NICKNAMES: Record<string, string> = {
   'wemby': 'Victor Wembanyama',
@@ -30,23 +30,20 @@ const NICKNAMES: Record<string, string> = {
   'lebron': 'LeBron James',
   'kd': 'Kevin Durant',
   'ant': 'Anthony Edwards',
-  'ant man': 'Anthony Edwards',
   'giannis': 'Giannis Antetokounmpo',
   'greek freak': 'Giannis Antetokounmpo',
   'luka': 'Luka Doncic',
+  'doncic': 'Luka Doncic',
   'trae': 'Trae Young',
   'dame': 'Damian Lillard',
   'book': 'Devin Booker',
-  'devin': 'Devin Booker',
   'jaylen': 'Jaylen Brown',
   'jt': 'Jayson Tatum',
   'tatum': 'Jayson Tatum',
   'embiid': 'Joel Embiid',
-  'jojo': 'Joel Embiid',
   'ad': 'Anthony Davis',
   'cp3': 'Chris Paul',
   'pg': 'Paul George',
-  'pg13': 'Paul George',
   'russ': 'Russell Westbrook',
   'harden': 'James Harden',
   'kawhi': 'Kawhi Leonard',
@@ -59,7 +56,6 @@ const NICKNAMES: Record<string, string> = {
   'evan': 'Evan Mobley',
   'mobley': 'Evan Mobley',
   'franz': 'Franz Wagner',
-  'wagner': 'Franz Wagner',
   'bam': 'Bam Adebayo',
   'tyrese': 'Tyrese Haliburton',
   'hali': 'Tyrese Haliburton',
@@ -68,24 +64,23 @@ const NICKNAMES: Record<string, string> = {
   'draymond': 'Draymond Green',
   'jalen': 'Jalen Brunson',
   'brunson': 'Jalen Brunson',
-  'randle': 'Julius Randle',
   'donovan': 'Donovan Mitchell',
   'spida': 'Donovan Mitchell',
   'zion': 'Zion Williamson',
   'ja': 'Ja Morant',
   'morant': 'Ja Morant',
   'scottie': 'Scottie Barnes',
-  'barnes': 'Scottie Barnes',
-  'ivey': 'Jaden Ivey',
-  'jaden': 'Jaden Ivey',
-  'holly': 'Darius Garland',
   'garland': 'Darius Garland',
-  'okoro': 'Isaac Okoro',
   'lauri': 'Lauri Markkanen',
   'rudy': 'Rudy Gobert',
-  'gobert': 'Rudy Gobert',
   'kat': 'Karl-Anthony Towns',
   'towns': 'Karl-Anthony Towns',
+  'fox': "De'Aaron Fox",
+  'spida': 'Donovan Mitchell',
+  'sabonis': 'Domantas Sabonis',
+  'siakam': 'Pascal Siakam',
+  'wiggins': 'Andrew Wiggins',
+  'poole': 'Jordan Poole',
 };
 
 const normalizeInput = (raw: string): string => {
@@ -93,21 +88,35 @@ const normalizeInput = (raw: string): string => {
   return NICKNAMES[lower] || raw.trim();
 };
 
+// ─── Tier config — includes bench tiers ──────────────────────────────────────
+
+const TIER_STYLES: Record<string, string> = {
+  'Lock In':     'bg-emerald-500/10 border-emerald-500/20 text-emerald-400',
+  'Start':       'bg-purple-500/10 border-purple-500/20 text-purple-400',
+  'Monitor':     'bg-amber-500/10 border-amber-500/20 text-amber-400',
+  'Sit':         'bg-rose-500/10 border-rose-500/20 text-rose-400',
+  'Top Reserve': 'bg-sky-500/10 border-sky-500/20 text-sky-400',
+  'Solid Bench': 'bg-slate-500/10 border-slate-500/20 text-slate-400',
+  'Deep Cut':    'bg-slate-700/30 border-slate-700 text-slate-500',
+};
+
+const TIER_RANK_STYLES: Record<string, string> = {
+  'Lock In':     'bg-emerald-500/20 text-emerald-400 border border-emerald-500/30',
+  'Start':       'bg-purple-500/20 text-purple-400 border border-purple-500/30',
+  'Monitor':     'bg-amber-500/20 text-amber-400 border border-amber-500/30',
+  'Sit':         'bg-rose-500/20 text-rose-400 border border-rose-500/30',
+  'Top Reserve': 'bg-sky-500/20 text-sky-400 border border-sky-500/30',
+  'Solid Bench': 'bg-slate-600/20 text-slate-400 border border-slate-600/30',
+  'Deep Cut':    'bg-slate-700/20 text-slate-500 border border-slate-700/30',
+};
+
 // ─── Sub-components ───────────────────────────────────────────────────────────
 
-const TierBadge = ({ tier }: { tier: OptimizedPlayer['tier'] }) => {
-  const styles: Record<string, string> = {
-    'Lock In': 'bg-emerald-500/10 border-emerald-500/20 text-emerald-400',
-    'Start':   'bg-purple-500/10 border-purple-500/20 text-purple-400',
-    'Monitor': 'bg-amber-500/10 border-amber-500/20 text-amber-400',
-    'Sit':     'bg-rose-500/10 border-rose-500/20 text-rose-400',
-  };
-  return (
-    <span className={`inline-flex items-center px-2 py-0.5 rounded-full border text-xs font-bold uppercase tracking-wide ${styles[tier]}`}>
-      {tier}
-    </span>
-  );
-};
+const TierBadge = ({ tier }: { tier: string }) => (
+  <span className={`inline-flex items-center px-2 py-0.5 rounded-full border text-xs font-bold uppercase tracking-wide ${TIER_STYLES[tier] || TIER_STYLES['Deep Cut']}`}>
+    {tier}
+  </span>
+);
 
 const TrendIcon = ({ trend }: { trend: 'up' | 'down' | 'stable' }) => {
   if (trend === 'up') return <TrendingUp className="w-3.5 h-3.5 text-emerald-400" />;
@@ -116,8 +125,8 @@ const TrendIcon = ({ trend }: { trend: 'up' | 'down' | 'stable' }) => {
 };
 
 const ReasonPill = ({ reason }: { reason: string }) => {
-  const isGood = reason.includes('🔥') || reason.includes('trending up') || reason.includes('Minutes up') || reason.includes('Elite') || reason.includes('Strong');
-  const isBad = reason.includes('⚠️') || reason.includes('trending down') || reason.includes('reduced role');
+  const isGood = reason.includes('🔥') || reason.includes('Trending Up') || reason.includes('Minutes Up') || reason.includes('Elite') || reason.includes('Strong') || reason.includes('Fresh Legs');
+  const isBad = reason.includes('⚠️') || reason.includes('Trending Down') || reason.includes('Reduced Role') || reason.includes('Fatigue Risk');
   const base = 'text-xs px-2.5 py-1 rounded-lg border ';
   const style = isGood
     ? base + 'bg-emerald-500/10 border-emerald-500/20 text-emerald-300'
@@ -141,9 +150,7 @@ const PlayerTag = ({ tag, onRemove }: { tag: ResolvedTag; onRemove: () => void }
       <div className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-rose-500/10 border border-rose-500/30 text-rose-400 text-sm">
         <AlertTriangle className="w-3 h-3" />
         <span>{tag.input}</span>
-        <button onClick={onRemove} className="ml-1 hover:text-rose-200 transition-colors">
-          <X className="w-3 h-3" />
-        </button>
+        <button onClick={onRemove} className="ml-1 hover:text-rose-200 transition-colors"><X className="w-3 h-3" /></button>
       </div>
     );
   }
@@ -157,12 +164,8 @@ const PlayerTag = ({ tag, onRemove }: { tag: ResolvedTag; onRemove: () => void }
           referrerPolicy="no-referrer"
         />
       </div>
-      <span className="font-medium">
-        {tag.player?.first_name} {tag.player?.last_name}
-      </span>
-      <button onClick={onRemove} className="ml-1 hover:text-emerald-200 transition-colors">
-        <X className="w-3 h-3" />
-      </button>
+      <span className="font-medium">{tag.player?.first_name} {tag.player?.last_name}</span>
+      <button onClick={onRemove} className="ml-1 hover:text-emerald-200 transition-colors"><X className="w-3 h-3" /></button>
     </div>
   );
 };
@@ -173,12 +176,6 @@ const PlayerResultCard = ({ player, rank, defaultExpanded = false }: {
   defaultExpanded?: boolean;
 }) => {
   const [expanded, setExpanded] = useState(defaultExpanded);
-  const tierRankColor: Record<string, string> = {
-    'Lock In': 'bg-emerald-500/20 text-emerald-400 border border-emerald-500/30',
-    'Start':   'bg-purple-500/20 text-purple-400 border border-purple-500/30',
-    'Monitor': 'bg-amber-500/20 text-amber-400 border border-amber-500/30',
-    'Sit':     'bg-rose-500/20 text-rose-400 border border-rose-500/30',
-  };
 
   return (
     <div className="bg-slate-900 border border-slate-800 rounded-2xl overflow-hidden transition-all">
@@ -186,7 +183,7 @@ const PlayerResultCard = ({ player, rank, defaultExpanded = false }: {
         onClick={() => setExpanded(e => !e)}
         className="w-full text-left p-5 flex items-center gap-4 hover:bg-slate-800/40 transition-colors"
       >
-        <div className={`w-8 h-8 rounded-full flex items-center justify-center text-sm font-black flex-shrink-0 ${tierRankColor[player.tier]}`}>
+        <div className={`w-8 h-8 rounded-full flex items-center justify-center text-sm font-black flex-shrink-0 ${TIER_RANK_STYLES[player.tier] || TIER_RANK_STYLES['Deep Cut']}`}>
           {rank}
         </div>
         <div className="w-10 h-10 rounded-lg bg-slate-800 overflow-hidden flex-shrink-0 border border-slate-700">
@@ -270,10 +267,7 @@ export default function OptimizeLineup({ onClose }: OptimizeLineupProps) {
   const resolveAndAdd = useCallback(async (raw: string) => {
     const trimmed = raw.trim();
     if (!trimmed) return;
-
     const normalized = normalizeInput(trimmed);
-
-    // Deduplicate
     const alreadyExists = tags.some(t =>
       t.input.toLowerCase() === trimmed.toLowerCase() ||
       (t.player && `${t.player.first_name} ${t.player.last_name}`.toLowerCase() === normalized.toLowerCase())
@@ -283,8 +277,8 @@ export default function OptimizeLineup({ onClose }: OptimizeLineupProps) {
     setTags(prev => [...prev, { input: trimmed, player: null, status: 'resolving' }]);
 
     try {
-      const results = await searchPlayers(normalized);
-      const match = results[0] ?? null;
+      const res = await searchPlayers(normalized);
+      const match = res[0] ?? null;
       setTags(prev => prev.map(t =>
         t.input === trimmed && t.status === 'resolving'
           ? { ...t, player: match, status: match ? 'found' : 'not_found' }
@@ -346,18 +340,18 @@ export default function OptimizeLineup({ onClose }: OptimizeLineupProps) {
             <p className="text-sm text-slate-400">Type a player name and press Enter to add them</p>
           </div>
         </div>
-        <button onClick={results ? () => { setResults(null); setError(null); setTags([]); setInputValue(''); setFullRosterExpanded(false); } : onClose}>
-          {results ? (
-            <span className="text-sm font-medium text-slate-400 hover:text-slate-200 px-3 py-1.5 rounded-lg border border-slate-700 hover:bg-slate-800 transition-colors">
-              Start Over
-            </span>
-          ) : (
-            <X className="w-5 h-5 text-slate-500 hover:text-slate-300 transition-colors" />
-          )}
+        <button onClick={results
+          ? () => { setResults(null); setError(null); setTags([]); setInputValue(''); setFullRosterExpanded(false); }
+          : onClose
+        }>
+          {results
+            ? <span className="text-sm font-medium text-slate-400 hover:text-slate-200 px-3 py-1.5 rounded-lg border border-slate-700 hover:bg-slate-800 transition-colors">Start Over</span>
+            : <X className="w-5 h-5 text-slate-500 hover:text-slate-300 transition-colors" />
+          }
         </button>
       </div>
 
-      {/* Step 1 — Tag input */}
+      {/* Step 1 — Input */}
       {!results && (
         <div className="bg-slate-900 border border-slate-800 rounded-2xl p-6 shadow-xl shadow-slate-900/50">
           <div
@@ -373,31 +367,17 @@ export default function OptimizeLineup({ onClose }: OptimizeLineupProps) {
               value={inputValue}
               onChange={e => setInputValue(e.target.value)}
               onKeyDown={handleKeyDown}
-              placeholder={tags.length === 0 ? 'Type a name and press Enter — try "Wemby", "SGA", "Curry"...' : 'Add another player...'}
+              placeholder={tags.length === 0 ? 'Type a name and press Enter — try "Wemby", "SGA", "Luka"...' : 'Add another player...'}
               className="flex-1 min-w-[220px] bg-transparent text-slate-100 placeholder-slate-600 text-sm outline-none py-1"
             />
           </div>
 
           <div className="flex items-center justify-between mt-3">
             <div className="flex items-center gap-3 text-xs">
-              {foundCount > 0 && (
-                <span className="flex items-center gap-1 text-emerald-400">
-                  <Check className="w-3 h-3" />{foundCount} found
-                </span>
-              )}
-              {resolvingCount > 0 && (
-                <span className="flex items-center gap-1 text-slate-400">
-                  <Loader2 className="w-3 h-3 animate-spin" />resolving...
-                </span>
-              )}
-              {notFoundCount > 0 && (
-                <span className="flex items-center gap-1 text-rose-400">
-                  <AlertTriangle className="w-3 h-3" />{notFoundCount} not found
-                </span>
-              )}
-              {tags.length === 0 && (
-                <span className="text-slate-600">Add 2–15 players from your fantasy roster</span>
-              )}
+              {foundCount > 0 && <span className="flex items-center gap-1 text-emerald-400"><Check className="w-3 h-3" />{foundCount} found</span>}
+              {resolvingCount > 0 && <span className="flex items-center gap-1 text-slate-400"><Loader2 className="w-3 h-3 animate-spin" />resolving...</span>}
+              {notFoundCount > 0 && <span className="flex items-center gap-1 text-rose-400"><AlertTriangle className="w-3 h-3" />{notFoundCount} not found</span>}
+              {tags.length === 0 && <span className="text-slate-600">Add 2–15 players from your fantasy roster</span>}
             </div>
             <span className="text-xs text-slate-600">Enter or comma to add</span>
           </div>
@@ -413,11 +393,10 @@ export default function OptimizeLineup({ onClose }: OptimizeLineupProps) {
             disabled={foundCount < 2 || isOptimizing || resolvingCount > 0}
             className="mt-4 w-full bg-purple-600 hover:bg-purple-500 disabled:opacity-40 disabled:cursor-not-allowed text-white font-semibold py-3 px-6 rounded-xl transition-colors flex items-center justify-center gap-2"
           >
-            {isOptimizing ? (
-              <><Loader2 className="w-4 h-4 animate-spin" />Analyzing your roster...</>
-            ) : (
-              <><Zap className="w-4 h-4" />{foundCount >= 2 ? `Optimize ${foundCount} Players` : 'Add at least 2 players'}</>
-            )}
+            {isOptimizing
+              ? <><Loader2 className="w-4 h-4 animate-spin" />Analyzing your roster...</>
+              : <><Zap className="w-4 h-4" />{foundCount >= 2 ? `Optimize ${foundCount} Players` : 'Add at least 2 players'}</>
+            }
           </button>
         </div>
       )}
@@ -432,6 +411,7 @@ export default function OptimizeLineup({ onClose }: OptimizeLineupProps) {
             </div>
           )}
 
+          {/* Recommended Starters */}
           <div>
             <div className="flex items-center gap-3 mb-4">
               <div className="p-1.5 bg-emerald-500/10 rounded-lg border border-emerald-500/20">
@@ -449,6 +429,7 @@ export default function OptimizeLineup({ onClose }: OptimizeLineupProps) {
             </div>
           </div>
 
+          {/* Full Roster */}
           {bench.length > 0 && (
             <div>
               <button
