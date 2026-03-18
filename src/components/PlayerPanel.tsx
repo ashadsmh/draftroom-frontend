@@ -218,21 +218,28 @@ const PlayerPanel: React.FC<PlayerPanelProps> = ({
                       axisLine={false}
                     />
                     <YAxis
-                      domain={[0, 100]}
+                      domain={([dataMin, dataMax]: [number, number]) => {
+                        const padding = Math.max((dataMax - dataMin) * 0.2, 5);
+                        return [Math.max(40, Math.floor(dataMin - padding)), Math.min(100, Math.ceil(dataMax + padding))];
+                      }}
                       tick={{ fill: '#64748b', fontSize: 10 }}
                       tickLine={false}
                       axisLine={false}
                     />
                     <Tooltip
-                      contentStyle={{ backgroundColor: '#0f172a', border: '1px solid #1e293b', borderRadius: '8px' }}
-                      labelStyle={{ color: '#94a3b8', fontSize: 11 }}
-                      formatter={(value: any, name: any) => [value, 'DR Score']}
-                      labelFormatter={(label: any, payload: any) => {
-                        if (payload && payload[0]) {
+                      cursor={{ stroke: '#334155', strokeWidth: 1 }}
+                      content={({ active, payload }) => {
+                        if (active && payload && payload.length > 0) {
                           const d = payload[0].payload;
-                          return `vs ${d.opponent} · ${d.date}`;
+                          return (
+                            <div className="bg-slate-900 border border-slate-700 rounded-xl px-3 py-2 shadow-xl">
+                              <div className="text-xs text-slate-400 mb-1">vs {d.opponent} · {d.date}</div>
+                              <div className="text-sm font-black text-purple-400">DR Score: {d.dr_score}</div>
+                              <div className="text-xs text-slate-500 mt-1">{d.pts} PTS · {d.ast} AST · {d.reb} REB</div>
+                            </div>
+                          );
                         }
-                        return label;
+                        return null;
                       }}
                     />
                     <ReferenceLine y={70} stroke="#334155" strokeDasharray="4 4" />
@@ -243,7 +250,8 @@ const PlayerPanel: React.FC<PlayerPanelProps> = ({
                       stroke="rgb(168,85,247)"
                       strokeWidth={2}
                       dot={{ fill: 'rgb(168,85,247)', r: 3, strokeWidth: 0 }}
-                      activeDot={{ r: 5, fill: 'rgb(168,85,247)' }}
+                      activeDot={{ r: 5, fill: 'rgb(168,85,247)', stroke: '#0f172a', strokeWidth: 2 }}
+                      isAnimationActive={false}
                     />
                   </LineChart>
                 </ResponsiveContainer>

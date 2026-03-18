@@ -479,10 +479,12 @@ export default function App() {
           </p>
 
           <div className="relative w-full max-w-2xl">
-            {isAddingToComparison && comparisonPlayers.length > 0 && (
+            {isAddingToComparison && (
               <div className="text-sm font-semibold text-slate-400 uppercase tracking-wider mb-2 text-center">
-                {comparisonPlayers.length === 1
-                  ? `Comparing against ${comparisonPlayers[0].player.first_name} ${comparisonPlayers[0].player.last_name} — search a second player`
+                {comparisonPlayers.length === 0
+                  ? `Search for a player to compare`
+                  : comparisonPlayers.length === 1
+                  ? `Comparing against ${comparisonPlayers[0].player.first_name} ${comparisonPlayers[0].player.last_name} — search a replacement`
                   : `Add a third player to compare`}
               </div>
             )}
@@ -632,6 +634,12 @@ export default function App() {
                   setComparisonMode(false);
                   setComparisonPlayers([]);
                   setIsAddingToComparison(false);
+                }}
+                onRemovePlayer={(playerId) => {
+                  setComparisonPlayers(prev => prev.filter(p => p.player.id !== playerId));
+                  setIsAddingToComparison(true);
+                  setSearchQuery('');
+                  searchInputRef.current?.focus();
                 }}
               />
             ) : (
