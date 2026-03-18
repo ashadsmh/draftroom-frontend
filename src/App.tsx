@@ -431,7 +431,7 @@ export default function App() {
             </button>
           </div>
 
-          <div className="flex items-center gap-2">
+          <div className="flex items-center gap-3">
             <button
               onClick={startTour}
               className="text-sm font-medium text-slate-400 hover:text-slate-200 transition-colors px-3 py-1.5 rounded-lg border border-slate-700 hover:bg-slate-800"
@@ -806,7 +806,7 @@ export default function App() {
                       const data = team.slots[slot];
                       return (
                         <div key={slot} className="flex items-center justify-between text-sm">
-                          <div className="flex items-center gap-2">
+                          <div className="flex items-center gap-3">
                             <span className="text-xs font-bold text-slate-500 w-6">{slot}</span>
                             <span className="text-slate-300 font-medium">
                               {data ? `${data.player.first_name} ${data.player.last_name}` : 'Empty'}
@@ -946,7 +946,7 @@ export default function App() {
       <footer className="bg-slate-900 border-t border-slate-800 mt-16">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
           <div className="flex flex-col sm:flex-row items-center justify-between gap-4">
-            <div className="flex items-center gap-2">
+            <div className="flex items-center gap-3">
               <TrendingUp className="w-5 h-5 text-purple-500" strokeWidth={2.5} />
               <span className="text-base font-extrabold tracking-tight text-white">DraftRoom</span>
             </div>

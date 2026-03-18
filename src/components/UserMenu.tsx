@@ -92,8 +92,7 @@ export default function UserMenu({ user, onSignOut }: UserMenuProps) {
 
       {/* Sign out confirmation modal */}
       {showConfirm && (
-        <div className="fixed inset-0 bg-slate-950/80 backdrop-blur-sm z-50 flex items-center justify-center p-4">
-          <div className="bg-slate-900 border border-slate-800 rounded-2xl p-6 max-w-sm w-full shadow-2xl">
+        <div className="absolute right-0 top-full mt-2 w-64 bg-slate-900 border border-slate-700 rounded-xl shadow-2xl z-50 p-4">
             <div className="flex items-start justify-between mb-4">
               <h3 className="text-base font-bold text-slate-100">Sign out of DraftRoom?</h3>
               <button
@@ -120,7 +119,6 @@ export default function UserMenu({ user, onSignOut }: UserMenuProps) {
                 Sign out
               </button>
             </div>
-          </div>
         </div>
       )}
     </>
