@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef, useMemo } from 'react';
-import { Search, TrendingUp, Star, ChevronRight, Loader2, X, Bookmark, AlertTriangle } from 'lucide-react';
+import { Search, TrendingUp, Star, ChevronRight, Loader2, X, Bookmark, AlertTriangle, Zap, BarChart2 } from 'lucide-react';
 import { getComputedAverages, NbaPlayer, getDraftRoomScore, getTrajectory, getPlayerInfo } from './api/nba';
 import PlayerCard, { abbreviatePosition } from './components/PlayerCard';
 import PlayerPanel from './components/PlayerPanel';
@@ -485,15 +485,51 @@ export default function App() {
       </nav>
 
       <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
-        {/* Hero Section — hidden in optimize mode */}
+        {/* Hero Section */}
         {!optimizeMode && (
           <div className="flex flex-col items-center text-center mb-16">
-            <h1 className="text-5xl md:text-7xl lg:text-8xl font-extrabold text-slate-100 mb-4 tracking-tight flex justify-center">
+            <h1 className="text-5xl md:text-7xl lg:text-8xl font-extrabold text-slate-100 mb-3 tracking-tight">
               DraftRoom
             </h1>
-            <p className="text-lg md:text-xl text-slate-400 italic max-w-2xl mb-10">
-              Evaluate Talent with Precision
+            <p className="text-lg md:text-xl text-slate-400 mb-3">
+              The Analytics Edge for Fantasy Basketball
             </p>
+            <p className="text-sm text-slate-500 italic mb-8">
+              Know who to start before anyone else does.
+            </p>
+
+            {/* Value props — hidden when a player is selected or in team builder */}
+            {!selectedPlayer && !teamBuilderMode && (
+              <div className="flex flex-col sm:flex-row items-center gap-4 mb-10 w-full max-w-3xl">
+                <div className="flex items-center gap-3 bg-slate-900 border border-slate-800 rounded-xl px-4 py-3 flex-1 w-full">
+                  <div className="p-1.5 bg-purple-500/10 rounded-lg border border-purple-500/20 flex-shrink-0">
+                    <BarChart2 className="w-4 h-4 text-purple-400" />
+                  </div>
+                  <div className="text-left">
+                    <div className="text-xs font-bold text-slate-200">DR Score</div>
+                    <div className="text-xs text-slate-500">Proprietary efficiency metric</div>
+                  </div>
+                </div>
+                <div className="flex items-center gap-3 bg-slate-900 border border-slate-800 rounded-xl px-4 py-3 flex-1 w-full">
+                  <div className="p-1.5 bg-emerald-500/10 rounded-lg border border-emerald-500/20 flex-shrink-0">
+                    <Zap className="w-4 h-4 text-emerald-400" />
+                  </div>
+                  <div className="text-left">
+                    <div className="text-xs font-bold text-slate-200">Optimize Lineup</div>
+                    <div className="text-xs text-slate-500">Injury-aware start/sit decisions</div>
+                  </div>
+                </div>
+                <div className="flex items-center gap-3 bg-slate-900 border border-slate-800 rounded-xl px-4 py-3 flex-1 w-full">
+                  <div className="p-1.5 bg-amber-500/10 rounded-lg border border-amber-500/20 flex-shrink-0">
+                    <TrendingUp className="w-4 h-4 text-amber-400" />
+                  </div>
+                  <div className="text-left">
+                    <div className="text-xs font-bold text-slate-200">5-Game Projections</div>
+                    <div className="text-xs text-slate-500">Opponent-adjusted forecasting</div>
+                  </div>
+                </div>
+              </div>
+            )}
 
             <div className="relative w-full max-w-2xl">
               {isAddingToComparison && (
@@ -529,7 +565,6 @@ export default function App() {
                 )}
               </div>
 
-              {/* Dropdown */}
               {searchResults.length > 0 && isFocused && (
                 <div className="absolute top-full left-0 right-0 mt-2 bg-slate-900 border border-slate-800 rounded-xl shadow-2xl overflow-hidden z-50 max-h-80 overflow-y-auto">
                   {searchResults.map((player) => (
@@ -538,24 +573,20 @@ export default function App() {
                       className="w-full text-left px-4 py-3 hover:bg-slate-800 transition-colors flex items-center justify-between border-b border-slate-800/50 last:border-0"
                       onMouseDown={() => handlePlayerSelect(player)}
                     >
-                      <div>
-                        <div className="text-slate-100 font-medium flex items-center gap-2">
-                          {player.first_name} {player.last_name}
-                        </div>
+                      <div className="text-slate-100 font-medium">
+                        {player.first_name} {player.last_name}
                       </div>
                     </button>
                   ))}
                 </div>
               )}
 
-              {/* Search Error */}
               {searchError && (
                 <div className="absolute top-full left-0 right-0 mt-2 text-red-400 text-sm text-center">
                   {searchError}
                 </div>
               )}
 
-              {/* Pending Player Prompt */}
               {pendingPlayer && (
                 <div className="absolute top-full left-0 right-0 mt-2 bg-slate-900 border border-slate-800 rounded-xl shadow-2xl p-4 z-50 flex items-center justify-between">
                   <span className="text-slate-300 text-sm font-medium">This will end your current comparison. Continue?</span>
@@ -659,24 +690,23 @@ export default function App() {
                   setIsAddingToComparison(false);
                 }}
                 onRemovePlayer={(playerId) => {
-                const remaining = comparisonPlayers.filter(p => p.player.id !== playerId);
-                if (remaining.length === 1) {
-               // Drop back to single player view
-                  setComparisonMode(false);
-                  setComparisonPlayers([]);
-                  setIsAddingToComparison(false);
-                  setSelectedPlayer(remaining[0].player);
-                  setSelectedPlayerStats(remaining[0].stats);
-                  setSelectedPlayerDraftScore(remaining[0].draftScore);
-                  setSelectedPlayerTrajectory(remaining[0].trajectory);
-                  setSearchQuery(`${remaining[0].player.first_name} ${remaining[0].player.last_name}`);
-                } else {
-                setComparisonPlayers(remaining);
-                setIsAddingToComparison(true);
-                setSearchQuery('');
-                searchInputRef.current?.focus();
-              }
-            }}
+                  const remaining = comparisonPlayers.filter(p => p.player.id !== playerId);
+                  if (remaining.length === 1) {
+                    setComparisonMode(false);
+                    setComparisonPlayers([]);
+                    setIsAddingToComparison(false);
+                    setSelectedPlayer(remaining[0].player);
+                    setSelectedPlayerStats(remaining[0].stats);
+                    setSelectedPlayerDraftScore(remaining[0].draftScore);
+                    setSelectedPlayerTrajectory(remaining[0].trajectory);
+                    setSearchQuery(`${remaining[0].player.first_name} ${remaining[0].player.last_name}`);
+                  } else {
+                    setComparisonPlayers(remaining);
+                    setIsAddingToComparison(true);
+                    setSearchQuery('');
+                    searchInputRef.current?.focus();
+                  }
+                }}
               />
             ) : (
               <PlayerPanel
@@ -966,33 +996,25 @@ export default function App() {
         )}
       </main>
 
+      {/* Footer — cleaned up */}
       <footer className="bg-slate-900 border-t border-slate-800 mt-16">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-8 mb-8">
-            <div className="flex flex-col gap-2">
-              <div className="flex items-center gap-2">
-                <TrendingUp className="w-6 h-6 text-purple-500" strokeWidth={2.5} />
-                <span className="text-lg font-extrabold tracking-tight text-white">DraftRoom</span>
-              </div>
-              <p className="text-sm text-slate-400 italic">Evaluate Talent with Precision</p>
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+          <div className="flex flex-col sm:flex-row items-center justify-between gap-4">
+            <div className="flex items-center gap-2">
+              <TrendingUp className="w-5 h-5 text-purple-500" strokeWidth={2.5} />
+              <span className="text-base font-extrabold tracking-tight text-white">DraftRoom</span>
             </div>
-            <div className="flex flex-col gap-3">
-              <p className="text-xs font-semibold text-slate-500 uppercase tracking-wider">Built With</p>
-              <div className="flex flex-wrap gap-2">
-                {['React', 'TypeScript', 'FastAPI', 'Python', 'nba_api', 'Tailwind CSS', 'Recharts'].map(tech => (
-                  <span key={tech} className="px-2 py-1 rounded bg-slate-800 text-slate-300 text-xs border border-slate-700">{tech}</span>
-                ))}
-              </div>
-            </div>
-            <div className="flex flex-col gap-3">
-              <a href="https://github.com/ashadsmh" target="_blank" rel="noopener noreferrer" className="text-slate-400 hover:text-slate-200 transition-colors text-sm flex items-center gap-1">
-                GitHub — ashadsmh <ChevronRight className="w-3 h-3" />
-              </a>
-              <p className="text-xs text-slate-500">Powered by NBA.com data via nba_api</p>
-            </div>
+            <a
+              href="https://github.com/ashadsmh"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="text-slate-400 hover:text-slate-200 transition-colors text-sm flex items-center gap-1"
+            >
+              GitHub — ashadsmh <ChevronRight className="w-3 h-3" />
+            </a>
           </div>
-          <div className="border-t border-slate-800 pt-6">
-            <p className="text-center text-xs text-slate-500">© 2026 DraftRoom. Built by Ashad</p>
+          <div className="border-t border-slate-800 mt-6 pt-6">
+            <p className="text-center text-xs text-slate-500">© 2026 DraftRoom</p>
           </div>
         </div>
       </footer>
