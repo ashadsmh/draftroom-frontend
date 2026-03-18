@@ -32,6 +32,7 @@ export default function App() {
   const [showLanding, setShowLanding] = useState(() => {
     return !localStorage.getItem(LANDING_KEY);
   });
+  const [optimizeMode, setOptimizeMode] = useState(false);
 
   const handleEnterApp = (mode?: 'optimize') => {
     localStorage.setItem(LANDING_KEY, 'true');
@@ -119,7 +120,6 @@ export default function App() {
 
   const [teamBuilderError, setTeamBuilderError] = useState<string | null>(null);
   const [teamBuilderMode, setTeamBuilderMode] = useState(false);
-  const [optimizeMode, setOptimizeMode] = useState(false);
   const [isComparingTeams, setIsComparingTeams] = useState(false);
   const [teamSlots, setTeamSlots] = useState<Record<string, TeamSlot | null>>({
     PG: null, SG: null, SF: null, PF: null, C: null
@@ -488,38 +488,6 @@ export default function App() {
             <p className="text-lg md:text-xl text-slate-300 mb-8">
               The Best Analytics Tool for Fantasy Basketball
             </p>
-
-            {!selectedPlayer && !teamBuilderMode && (
-              <div className="flex flex-col sm:flex-row items-stretch gap-4 mb-10 w-full max-w-3xl">
-                <div id="tour-dr-score" className="flex items-center gap-3 bg-slate-900 border border-slate-800 rounded-xl px-4 py-4 flex-1 min-h-[80px]">
-                  <div className="p-1.5 bg-purple-500/10 rounded-lg border border-purple-500/20 flex-shrink-0">
-                    <BarChart2 className="w-4 h-4 text-purple-400" />
-                  </div>
-                  <div className="text-left">
-                    <div className="text-xs font-bold text-slate-200">DR Score</div>
-                    <div className="text-xs text-slate-500">Efficiency metric: TS%, Playmaking, Defense, Foul Draw & Volume</div>
-                  </div>
-                </div>
-                <div className="flex items-center gap-3 bg-slate-900 border border-slate-800 rounded-xl px-4 py-4 flex-1 min-h-[80px]">
-                  <div className="p-1.5 bg-emerald-500/10 rounded-lg border border-emerald-500/20 flex-shrink-0">
-                    <Zap className="w-4 h-4 text-emerald-400" />
-                  </div>
-                  <div className="text-left">
-                    <div className="text-xs font-bold text-slate-200">Optimize Lineup</div>
-                    <div className="text-xs text-slate-500">Learn who to start/sit from your roster</div>
-                  </div>
-                </div>
-                <div className="flex items-center gap-3 bg-slate-900 border border-slate-800 rounded-xl px-4 py-4 flex-1 min-h-[80px]">
-                  <div className="p-1.5 bg-amber-500/10 rounded-lg border border-amber-500/20 flex-shrink-0">
-                    <TrendingUp className="w-4 h-4 text-amber-400" />
-                  </div>
-                  <div className="text-left">
-                    <div className="text-xs font-bold text-slate-200">5-Game Projections</div>
-                    <div className="text-xs text-slate-500">Predicted stats for a five game forecast</div>
-                  </div>
-                </div>
-              </div>
-            )}
 
             <div className="relative w-full max-w-2xl">
               {isAddingToComparison && (
