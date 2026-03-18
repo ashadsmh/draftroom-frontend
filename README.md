@@ -12,6 +12,9 @@ DraftRoom gives fantasy basketball players a real edge over their league. Instea
 
 Built for serious fantasy players and casual fans alike.
 
+![](LoadingPage.png)
+
+
 ---
 
 ## Features
