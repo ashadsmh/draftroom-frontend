@@ -99,7 +99,7 @@ export default function LandingPage({ onEnterApp }: LandingPageProps) {
       <main className="flex-1 flex flex-col lg:flex-row items-start justify-center gap-12 px-6 py-8 max-w-7xl mx-auto w-full">
         
         {/* Left — copy */}
-          <div className="flex-1 flex flex-col items-start max-w-xl lg:pt-8">
+          <div className="flex-1 flex flex-col items-start max-w-xl lg:pt-12">
             <div className="inline-flex items-center gap-2 bg-purple-500/10 border border-purple-500/20 rounded-full px-3 py-1 mb-6">
             <div className="w-1.5 h-1.5 bg-purple-400 rounded-full animate-pulse" />
             <span className="text-xs font-semibold text-purple-400 uppercase tracking-wider">Fantasy Basketball Analytics</span>
