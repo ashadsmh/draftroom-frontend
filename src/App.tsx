@@ -643,7 +643,7 @@ export default function App() {
         {/* Selected Player View */}
         {!teamBuilderMode && !optimizeMode && selectedPlayer && (
           <div className="mb-16">
-            {comparisonMode && comparisonPlayers.length > 1 ? (
+            {comparisonMode && comparisonPlayers.length >= 1 ? (
               <ComparisonPanel
                 comparisonPlayers={comparisonPlayers}
                 onAddThird={() => {
