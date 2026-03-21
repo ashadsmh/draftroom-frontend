@@ -54,26 +54,28 @@ const PlayerPanel: React.FC<PlayerPanelProps> = ({
       .finally(() => setIsLoadingHistory(false));
   }, [selectedPlayer, selectedRange]);
 
+  const sortedHistory = [...drHistory].sort((a, b) => a.game_number - b.game_number);
+
   return (
     <div className="bg-slate-900 border border-slate-800 rounded-2xl p-8 flex flex-col shadow-xl shadow-slate-900/50">
       <div className="flex justify-between items-start w-full mb-6">
         <div></div>
         <div className="flex items-center gap-2">
-          <button 
+          <button
             onClick={onToggleBookmark}
             className={`transition-colors p-2 rounded-lg ${isBookmarked ? 'text-indigo-400 bg-indigo-500/10' : 'text-slate-500 hover:text-slate-300 hover:bg-slate-800'}`}
             title={isBookmarked ? "Remove from Watchlist" : "Add to Watchlist"}
           >
             <Bookmark className="w-5 h-5" fill={isBookmarked ? "currentColor" : "none"} />
           </button>
-          <button 
+          <button
             onClick={onStartComparison}
             disabled={isLoadingStats || isLoadingDraftScore || isLoadingTrajectory}
             className="text-slate-400 hover:text-slate-200 transition-colors px-3 py-1.5 rounded-lg hover:bg-slate-800 text-sm font-medium border border-slate-700 disabled:opacity-50 disabled:cursor-not-allowed"
           >
             Compare
           </button>
-          <button 
+          <button
             onClick={onClose}
             className="text-slate-500 hover:text-slate-300 transition-colors p-2 rounded-lg hover:bg-slate-800"
           >
@@ -86,7 +88,7 @@ const PlayerPanel: React.FC<PlayerPanelProps> = ({
         <div className="flex-1 w-full">
           <div className="flex items-center gap-4 mb-2">
             <div className="relative flex-shrink-0">
-              <img 
+              <img
                 src={`https://cdn.nba.com/headshots/nba/latest/1040x760/${selectedPlayer.id}.png`}
                 alt={`${selectedPlayer.first_name} ${selectedPlayer.last_name}`}
                 className="w-20 h-20 rounded-xl object-cover border border-slate-700 bg-slate-800/50"
@@ -131,7 +133,7 @@ const PlayerPanel: React.FC<PlayerPanelProps> = ({
               </p>
             </div>
           </div>
-          
+
           {isLoadingStats ? (
             <div className="flex items-center gap-3 text-slate-400 py-4">
               <Loader2 className="w-5 h-5 animate-spin text-purple-500" />
@@ -143,30 +145,21 @@ const PlayerPanel: React.FC<PlayerPanelProps> = ({
                 Season Form — Last {selectedPlayerStats.count} {selectedPlayerStats.count === 1 ? 'Game' : 'Games'}
               </div>
               <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4">
-                <div className="bg-slate-950/50 rounded-xl p-5 border border-slate-800/50">
-                  <div className="text-sm text-slate-500 mb-1 font-medium">PTS</div>
-                  <div className="text-3xl font-bold text-slate-200">{selectedPlayerStats.pts?.toFixed(1) || '0.0'}</div>
-                </div>
-                <div className="bg-slate-950/50 rounded-xl p-5 border border-slate-800/50">
-                  <div className="text-sm text-slate-500 mb-1 font-medium">AST</div>
-                  <div className="text-3xl font-bold text-slate-200">{selectedPlayerStats.ast?.toFixed(1) || '0.0'}</div>
-                </div>
-                <div className="bg-slate-950/50 rounded-xl p-5 border border-slate-800/50">
-                  <div className="text-sm text-slate-500 mb-1 font-medium">REB</div>
-                  <div className="text-3xl font-bold text-slate-200">{selectedPlayerStats.reb?.toFixed(1) || '0.0'}</div>
-                </div>
-                <div className="bg-slate-950/50 rounded-xl p-5 border border-slate-800/50">
-                  <div className="text-sm text-slate-500 mb-1 font-medium">FG%</div>
-                  <div className="text-3xl font-bold text-slate-200">{((selectedPlayerStats.fg_pct || 0) * 100).toFixed(1)}%</div>
-                </div>
-                <div className="bg-slate-950/50 rounded-xl p-5 border border-slate-800/50">
-                  <div className="text-sm text-slate-500 mb-1 font-medium">STL</div>
-                  <div className="text-3xl font-bold text-slate-200">{selectedPlayerStats.stl?.toFixed(1) || '0.0'}</div>
-                </div>
-                <div className="bg-slate-950/50 rounded-xl p-5 border border-slate-800/50">
-                  <div className="text-sm text-slate-500 mb-1 font-medium">BLK</div>
-                  <div className="text-3xl font-bold text-slate-200">{selectedPlayerStats.blk?.toFixed(1) || '0.0'}</div>
-                </div>
+                {[
+                  { label: 'PTS', value: selectedPlayerStats.pts },
+                  { label: 'AST', value: selectedPlayerStats.ast },
+                  { label: 'REB', value: selectedPlayerStats.reb },
+                  { label: 'FG%', value: (selectedPlayerStats.fg_pct || 0) * 100, suffix: '%' },
+                  { label: 'STL', value: selectedPlayerStats.stl },
+                  { label: 'BLK', value: selectedPlayerStats.blk },
+                ].map(stat => (
+                  <div key={stat.label} className="bg-slate-950/50 rounded-xl p-5 border border-slate-800/50">
+                    <div className="text-sm text-slate-500 mb-1 font-medium">{stat.label}</div>
+                    <div className="text-3xl font-bold text-slate-200">
+                      {stat.value?.toFixed(1) || '0.0'}{stat.suffix || ''}
+                    </div>
+                  </div>
+                ))}
               </div>
             </div>
           ) : (
@@ -206,16 +199,17 @@ const PlayerPanel: React.FC<PlayerPanelProps> = ({
               <div className="text-slate-500 italic py-4 bg-slate-950/30 rounded-xl px-4 border border-slate-800/30">
                 {historyError}
               </div>
-            ) : drHistory.length > 0 ? (
+            ) : sortedHistory.length > 0 ? (
               <div className="bg-slate-950/50 rounded-xl p-4 border border-slate-800/50">
                 <ResponsiveContainer width="100%" height={200}>
-                  <LineChart data={drHistory} margin={{ top: 5, right: 10, left: -20, bottom: 5 }}>
+                  <LineChart data={sortedHistory} margin={{ top: 5, right: 10, left: -20, bottom: 5 }}>
                     <CartesianGrid strokeDasharray="3 3" stroke="#1e293b" />
                     <XAxis
-                      dataKey="opponent"
+                      dataKey="game_number"
                       tick={{ fill: '#64748b', fontSize: 10 }}
                       tickLine={false}
                       axisLine={false}
+                      label={{ value: 'Game', position: 'insideBottom', offset: -2, fill: '#475569', fontSize: 10 }}
                     />
                     <YAxis
                       domain={([dataMin, dataMax]: [number, number]) => {
@@ -308,7 +302,7 @@ const PlayerPanel: React.FC<PlayerPanelProps> = ({
                     <div className="mt-auto">
                       <div className="flex items-center gap-1.5">
                         <div className="flex-1 h-1.5 bg-slate-800 rounded-full overflow-hidden">
-                          <div 
+                          <div
                             className={`h-full rounded-full ${stat.data.confidence >= 70 ? 'bg-emerald-500' : stat.data.confidence >= 50 ? 'bg-amber-500' : 'bg-rose-500'}`}
                             style={{ width: `${stat.data.confidence}%` }}
                           />
@@ -342,7 +336,7 @@ const PlayerPanel: React.FC<PlayerPanelProps> = ({
                 </span>
               </div>
               <span className="text-[10px] font-bold text-slate-500 uppercase tracking-widest mb-6">DraftRoom Score</span>
-              
+
               <div className="w-[200px] h-[200px] mb-6">
                 <ResponsiveContainer width="100%" height="100%">
                   <RadarChart data={[
@@ -360,26 +354,18 @@ const PlayerPanel: React.FC<PlayerPanelProps> = ({
               </div>
 
               <div className="w-full space-y-3">
-                <div className="flex justify-between items-center text-sm">
-                  <span className="text-slate-500">TS Rel</span>
-                  <span className="text-slate-200 font-medium">{selectedPlayerDraftScore.components.ts_rel_score}</span>
-                </div>
-                <div className="flex justify-between items-center text-sm">
-                  <span className="text-slate-500">Playmaking</span>
-                  <span className="text-slate-200 font-medium">{selectedPlayerDraftScore.components.play_score}</span>
-                </div>
-                <div className="flex justify-between items-center text-sm">
-                  <span className="text-slate-500">Def Impact</span>
-                  <span className="text-slate-200 font-medium">{selectedPlayerDraftScore.components.def_score}</span>
-                </div>
-                <div className="flex justify-between items-center text-sm">
-                  <span className="text-slate-500">Foul Rate</span>
-                  <span className="text-slate-200 font-medium">{selectedPlayerDraftScore.components.ftr_score}</span>
-                </div>
-                <div className="flex justify-between items-center text-sm">
-                  <span className="text-slate-500">Vol Eff</span>
-                  <span className="text-slate-200 font-medium">{selectedPlayerDraftScore.components.vol_eff_score}</span>
-                </div>
+                {[
+                  { label: 'TS Rel', value: selectedPlayerDraftScore.components.ts_rel_score },
+                  { label: 'Playmaking', value: selectedPlayerDraftScore.components.play_score },
+                  { label: 'Def Impact', value: selectedPlayerDraftScore.components.def_score },
+                  { label: 'Foul Rate', value: selectedPlayerDraftScore.components.ftr_score },
+                  { label: 'Vol Eff', value: selectedPlayerDraftScore.components.vol_eff_score },
+                ].map(item => (
+                  <div key={item.label} className="flex justify-between items-center text-sm">
+                    <span className="text-slate-500">{item.label}</span>
+                    <span className="text-slate-200 font-medium">{item.value}</span>
+                  </div>
+                ))}
               </div>
             </>
           ) : (
