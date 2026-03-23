@@ -5,6 +5,53 @@ import { abbreviatePosition } from './PlayerCard';
 import { NbaPlayer, DraftRoomScoreResponse, TrajectoryResponse, getScoreColor, getScoreBg, getCareerTier } from '../types';
 import { getDrHistory, DrHistoryEntry } from '../api/nba';
 
+function DrScoreTooltip() {
+  const [open, setOpen] = useState(false);
+
+  return (
+    <div className="relative flex justify-center mb-4">
+      <button
+        onClick={() => setOpen(o => !o)}
+        onMouseEnter={() => setOpen(true)}
+        onMouseLeave={() => setOpen(false)}
+        className="w-4 h-4 rounded-full border border-slate-600 text-slate-500 hover:text-slate-300 hover:border-slate-400 transition-colors flex items-center justify-center text-[10px] font-bold"
+      >
+        ?
+      </button>
+      {open && (
+        <div className="absolute bottom-full mb-2 left-1/2 -translate-x-1/2 w-56 bg-slate-800 border border-slate-700 rounded-xl p-3 shadow-2xl z-50 text-left">
+          <div className="text-xs font-bold text-slate-200 mb-2">How DR Score works</div>
+          <p className="text-xs text-slate-400 mb-3 leading-relaxed">
+            A 0–100 efficiency metric calculated from your last 10 games. Higher means more fantasy value.
+          </p>
+          <div className="flex flex-col gap-1.5">
+            {[
+              { label: 'True Shooting', weight: '25%', color: 'bg-purple-500' },
+              { label: 'Volume Efficiency', weight: '25%', color: 'bg-rose-500' },
+              { label: 'Playmaking', weight: '20%', color: 'bg-indigo-500' },
+              { label: 'Defensive Impact', weight: '20%', color: 'bg-emerald-500' },
+              { label: 'Foul Drawing', weight: '10%', color: 'bg-amber-500' },
+            ].map(c => (
+              <div key={c.label} className="flex items-center justify-between gap-2">
+                <div className="flex items-center gap-1.5">
+                  <div className={`w-1.5 h-1.5 rounded-full ${c.color}`} />
+                  <span className="text-xs text-slate-400">{c.label}</span>
+                </div>
+                <span className="text-xs font-bold text-slate-500">{c.weight}</span>
+              </div>
+            ))}
+          </div>
+          <div className="mt-2 pt-2 border-t border-slate-700 text-xs text-slate-500 italic">
+            Jokic scores 95+ nightly — all 5 components fire simultaneously.
+          </div>
+          {/* Arrow */}
+          <div className="absolute top-full left-1/2 -translate-x-1/2 border-l-4 border-r-4 border-t-4 border-transparent border-t-slate-700" />
+        </div>
+      )}
+    </div>
+  );
+}
+
 interface PlayerPanelProps {
   selectedPlayer: NbaPlayer;
   selectedPlayerStats: any;
@@ -335,7 +382,9 @@ const PlayerPanel: React.FC<PlayerPanelProps> = ({
                   {selectedPlayerDraftScore.draftroom_score}
                 </span>
               </div>
-              <span className="text-[10px] font-bold text-slate-500 uppercase tracking-widest mb-6">DraftRoom Score</span>
+              <span className="text-[10px] font-bold text-slate-500 uppercase tracking-widest mb-2">DraftRoom Score</span>
+
+              <DrScoreTooltip />
 
               <div className="w-[200px] h-[200px] mb-6">
                 <ResponsiveContainer width="100%" height="100%">
