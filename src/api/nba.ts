@@ -317,3 +317,9 @@ export const optimizeLineup = async (
     return null;
   }
 };
+
+export const pingBackend = async (): Promise<void> => {
+  try {
+    await fetch(`${BASE_URL}/players/search?query=james`);
+  } catch {}
+};

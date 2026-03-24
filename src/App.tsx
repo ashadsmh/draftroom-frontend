@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useRef, useMemo, useCallback } from 'react';
 import { Search, TrendingUp, Star, ChevronRight, Loader2, X, Bookmark, AlertTriangle, Zap, BarChart2 } from 'lucide-react';
-import { getComputedAverages, NbaPlayer, getDraftRoomScore, getTrajectory, getPlayerInfo, getBreakoutAlerts, BreakoutPlayer } from './api/nba';
+import { getComputedAverages, NbaPlayer, getDraftRoomScore, getTrajectory, getPlayerInfo, getBreakoutAlerts, BreakoutPlayer, pingBackend } from './api/nba';
 import PlayerCard, { abbreviatePosition } from './components/PlayerCard';
 import PlayerPanel from './components/PlayerPanel';
 import ComparisonPanel from './components/ComparisonPanel';
@@ -72,6 +72,10 @@ export default function App() {
   const [isLoadingBreakout, setIsLoadingBreakout] = useState(true);
   const [breakoutError, setBreakoutError] = useState<string | null>(null);
   const [showAllBreakout, setShowAllBreakout] = useState(false);
+
+  useEffect(() => {
+    pingBackend();
+  }, []);
 
   const {
     isLoadingStats,
@@ -273,8 +277,13 @@ export default function App() {
         if (!cancelled) setIsLoadingBreakout(false);
       }
     };
-    load();
-    return () => { cancelled = true; };
+    const timer = setTimeout(() => {
+      load();
+    }, 3000);
+    return () => { 
+      cancelled = true; 
+      clearTimeout(timer);
+    };
   }, []);
 
   useEffect(() => {

@@ -85,16 +85,22 @@ const PlayerPanel: React.FC<PlayerPanelProps> = ({
     setIsLoadingHistory(true);
     setHistoryError(null);
     setDrHistory([]);
-    getDrHistory(selectedPlayer.id, selectedRange)
-      .then(data => {
+    const fetchHistory = async () => {
+      try {
+        const data = await getDrHistory(selectedPlayer.id, selectedRange);
         if (!data || data.length === 0) {
           setHistoryError('History unavailable');
         } else {
           setDrHistory(data);
         }
-      })
-      .catch(() => setHistoryError('History unavailable'))
-      .finally(() => setIsLoadingHistory(false));
+      } catch (error) {
+        setHistoryError('History unavailable');
+      } finally {
+        setIsLoadingHistory(false);
+      }
+    };
+    
+    fetchHistory();
   }, [selectedPlayer, selectedRange]);
 
   const sortedHistory = [...drHistory].sort((a, b) => a.game_number - b.game_number);

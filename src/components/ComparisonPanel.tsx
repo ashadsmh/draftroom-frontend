@@ -41,13 +41,28 @@ export default function ComparisonPanel({ comparisonPlayers, onAddThird, onEndCo
     const loadedIds = comparisonPlayers.filter(cp => !cp.isLoading).map(cp => cp.player.id);
     if (loadedIds.length < 2) return;
     setIsLoadingHistory(true);
-    Promise.all(
-      loadedIds.map(id => getDrHistory(id, selectedRange).then(data => ({ id, data })))
-    ).then(results => {
-      const map: Record<number, DrHistoryEntry[]> = {};
-      results.forEach(r => { map[r.id] = r.data; });
-      setHistoryMap(map);
-    }).finally(() => setIsLoadingHistory(false));
+    const fetchHistories = async () => {
+      try {
+        const results = await Promise.all(
+          loadedIds.map(async id => {
+            try {
+              const data = await getDrHistory(id, selectedRange);
+              return { id, data };
+            } catch (err) {
+              return { id, data: [] };
+            }
+          })
+        );
+        const map: Record<number, DrHistoryEntry[]> = {};
+        results.forEach(r => { map[r.id] = r.data; });
+        setHistoryMap(map);
+      } catch (err) {
+        console.error("Failed to fetch histories", err);
+      } finally {
+        setIsLoadingHistory(false);
+      }
+    };
+    fetchHistories();
   }, [comparisonPlayers, selectedRange]);
 
   const mergedChartData = (() => {

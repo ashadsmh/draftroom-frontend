@@ -37,9 +37,10 @@ export function usePlayerData({
       setIsLoadingDraftScore(true);
       setIsLoadingTrajectory(true);
 
-      if (!selectedPlayer.position || selectedPlayer.team.full_name === 'NBA') {
-        getPlayerInfo(selectedPlayer.id)
-          .then(info => {
+      const fetchPlayerData = async () => {
+        if (!selectedPlayer.position || selectedPlayer.team.full_name === 'NBA') {
+          try {
+            const info = await getPlayerInfo(selectedPlayer.id);
             if (info && info.CommonPlayerInfo && info.CommonPlayerInfo.length > 0) {
               const pInfo = info.CommonPlayerInfo[0];
               setSelectedPlayer(prev => prev ? { 
@@ -48,51 +49,49 @@ export function usePlayerData({
                 team: { full_name: `${pInfo.TEAM_CITY} ${pInfo.TEAM_NAME}`.trim() }
               } : prev);
             }
-          })
-          .catch(err => console.error(err));
-      }
-      
-      getComputedAverages(selectedPlayer.id)
-        .then(stats => {
+          } catch (err) {
+            console.error(err);
+          }
+        }
+        
+        try {
+          const stats = await getComputedAverages(selectedPlayer.id);
           setSelectedPlayerStats(stats);
           if (onStatsLoaded) onStatsLoaded(stats);
-        })
-        .catch((err: any) => {
+        } catch (err: any) {
           const status = err?.response?.status || 'Unknown Status';
           console.error(`[getComputedAverages] Failed with status ${status}:`, err);
           setSelectedPlayerStats(null);
-        })
-        .finally(() => {
+        } finally {
           setIsLoadingStats(false);
-        });
+        }
 
-      getDraftRoomScore(selectedPlayer.id)
-        .then(score => {
+        try {
+          const score = await getDraftRoomScore(selectedPlayer.id);
           setSelectedPlayerDraftScore(score);
           if (onScoreLoaded && score) onScoreLoaded(score);
-        })
-        .catch((err: any) => {
+        } catch (err: any) {
           const status = err?.response?.status || 'Unknown Status';
           console.error(`[getDraftRoomScore] Failed with status ${status}:`, err);
           setSelectedPlayerDraftScore(null);
-        })
-        .finally(() => {
+        } finally {
           setIsLoadingDraftScore(false);
-        });
+        }
 
-      getTrajectory(selectedPlayer.id)
-        .then(traj => {
+        try {
+          const traj = await getTrajectory(selectedPlayer.id);
           setSelectedPlayerTrajectory(traj);
           if (onTrajectoryLoaded && traj) onTrajectoryLoaded(traj);
-        })
-        .catch((err: any) => {
+        } catch (err: any) {
           const status = err?.response?.status || 'Unknown Status';
           console.error(`[getTrajectory] Failed with status ${status}:`, err);
           setSelectedPlayerTrajectory(null);
-        })
-        .finally(() => {
+        } finally {
           setIsLoadingTrajectory(false);
-        });
+        }
+      };
+
+      fetchPlayerData();
     } else {
       setSelectedPlayerStats(null);
       setSelectedPlayerDraftScore(null);
