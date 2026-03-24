@@ -39,6 +39,8 @@ export const searchPlayers = async (query: string, signal?: AbortSignal): Promis
   });
   const data = await handleResponse(response);
   
+  // Map the backend search response to satisfy the NbaPlayer interface
+  // and prevent UI crashes since the new backend search doesn't return team/position
   return (data?.data ?? []).map((player: any) => ({
     id: player.id,
     full_name: player.full_name,
@@ -144,6 +146,20 @@ export interface DraftRoomScoreResponse {
   season: string;
 }
 
+export interface DraftRoomScoreResponse {
+  player_id: number;
+  draftroom_score: number;
+  components: {
+    ts_rel_score: number;
+    play_score: number;
+    def_score: number;
+    ftr_score: number;
+    vol_eff_score: number;
+  };
+  games_sampled: number;
+  season: string;
+}
+
 export const getDraftRoomScore = async (playerId: number): Promise<DraftRoomScoreResponse | null> => {
   try {
     const response = await fetchWithRetry(`${BASE_URL}/players/${playerId}/draftroom-score`);
@@ -210,25 +226,7 @@ export interface BatchPlayer {
     ast: number;
     reb: number;
   };
-  delta: number;
-  minutes_trend: 'up' | 'down' | 'stable';
-  minutes_delta: number;
-  avg_minutes: number;
 }
-
-export const getBatchScores = async (playerIds: number[]): Promise<BatchPlayer[]> => {
-  try {
-    const response = await fetch(`${BASE_URL}/players/batch-scores?player_ids=${playerIds.join(',')}`);
-    if (!response.ok) return [];
-    const data = await response.json();
-    return data.data || [];
-  } catch (error) {
-    console.error("Failed to fetch batch scores", error);
-    return [];
-  }
-};
-
-// ─── Breakout Alerts ──────────────────────────────────────────────────────────
 
 export interface BreakoutPlayer {
   id: number;
@@ -243,10 +241,6 @@ export interface BreakoutPlayer {
     ast: number;
     reb: number;
   };
-  delta: number;
-  minutes_trend: 'up' | 'down' | 'stable';
-  minutes_delta: number;
-  avg_minutes: number;
 }
 
 export const getBreakoutAlerts = async (): Promise<BreakoutPlayer[]> => {
@@ -261,7 +255,17 @@ export const getBreakoutAlerts = async (): Promise<BreakoutPlayer[]> => {
   }
 };
 
-// ─── Lineup Optimizer ─────────────────────────────────────────────────────────
+export const getBatchScores = async (playerIds: number[]): Promise<BatchPlayer[]> => {
+  try {
+    const response = await fetch(`${BASE_URL}/players/batch-scores?player_ids=${playerIds.join(',')}`);
+    if (!response.ok) return [];
+    const data = await response.json();
+    return data.data || [];
+  } catch (error) {
+    console.error("Failed to fetch batch scores", error);
+    return [];
+  }
+};
 
 export interface OptimizedPlayer {
   id: number;
