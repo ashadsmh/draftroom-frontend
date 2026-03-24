@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useRef, useMemo, useCallback } from 'react';
 import { Search, TrendingUp, Star, ChevronRight, Loader2, X, Bookmark, AlertTriangle, Zap, BarChart2 } from 'lucide-react';
-import { getComputedAverages, NbaPlayer, getDraftRoomScore, getTrajectory, getPlayerInfo } from './api/nba';
+import { getComputedAverages, NbaPlayer, getDraftRoomScore, getTrajectory, getPlayerInfo, getBreakoutAlerts, BreakoutPlayer } from './api/nba';
 import PlayerCard, { abbreviatePosition } from './components/PlayerCard';
 import PlayerPanel from './components/PlayerPanel';
 import ComparisonPanel from './components/ComparisonPanel';
@@ -66,7 +66,12 @@ export default function App() {
   const [selectedPlayerTrajectory, setSelectedPlayerTrajectory] = useState<any>(null);
 
   const [players, setPlayers] = useState<Player[]>([]);
+
+  // ─── Breakout state ───────────────────────────────────────────────────────
   const [breakoutPlayers, setBreakoutPlayers] = useState<Player[]>([]);
+  const [isLoadingBreakout, setIsLoadingBreakout] = useState(true);
+  const [breakoutError, setBreakoutError] = useState<string | null>(null);
+  const [showAllBreakout, setShowAllBreakout] = useState(false);
 
   const {
     isLoadingStats,
@@ -225,6 +230,7 @@ export default function App() {
     window.scrollTo({ top: 0, behavior: 'smooth' });
   };
 
+  // ─── Load top prospects (hardcoded) ──────────────────────────────────────
   useEffect(() => {
     const HARDCODED_TOP_PROSPECTS: Player[] = [
       { id: '203999', name: 'Nikola Jokic', position: 'C', team: 'DEN', score: null, stats: null, trend: null },
@@ -234,14 +240,41 @@ export default function App() {
       { id: '1629029', name: 'Luka Doncic', position: 'PG', team: 'DAL', score: null, stats: null, trend: null },
       { id: '1630162', name: 'Anthony Edwards', position: 'SG', team: 'MIN', score: null, stats: null, trend: null }
     ];
-    const HARDCODED_BREAKOUT_ALERTS: Player[] = [
-      { id: '1630567', name: 'Scottie Barnes', position: 'PF', team: 'TOR', score: null, stats: null, trend: null },
-      { id: '1630552', name: 'Jalen Johnson', position: 'PF', team: 'ATL', score: null, stats: null, trend: null },
-      { id: '1630596', name: 'Evan Mobley', position: 'PF', team: 'CLE', score: null, stats: null, trend: null }
-    ];
     setPlayers(HARDCODED_TOP_PROSPECTS);
-    setBreakoutPlayers(HARDCODED_BREAKOUT_ALERTS);
     setIsLoadingBatch(false);
+  }, []);
+
+  // ─── Load live breakout alerts from the API ───────────────────────────────
+  useEffect(() => {
+    let cancelled = false;
+    const load = async () => {
+      setIsLoadingBreakout(true);
+      setBreakoutError(null);
+      try {
+        const alerts = await getBreakoutAlerts();
+        if (cancelled) return;
+        if (alerts.length === 0) {
+          setBreakoutError('No breakout candidates found right now. Check back soon.');
+          return;
+        }
+        const mapped: Player[] = alerts.map((p: BreakoutPlayer) => ({
+          id: p.id.toString(),
+          name: p.name,
+          position: p.position || 'N/A',
+          team: p.team || 'NBA',
+          score: p.score ?? null,
+          stats: p.stats ? { pts: p.stats.pts, ast: p.stats.ast, reb: p.stats.reb } : null,
+          trend: p.trend ?? null,
+        }));
+        setBreakoutPlayers(mapped);
+      } catch {
+        if (!cancelled) setBreakoutError('Could not load breakout alerts.');
+      } finally {
+        if (!cancelled) setIsLoadingBreakout(false);
+      }
+    };
+    load();
+    return () => { cancelled = true; };
   }, []);
 
   useEffect(() => {
@@ -412,6 +445,9 @@ export default function App() {
       ? "Search for a third player..."
       : placeholder
   );
+
+  // Slice breakout players: 3 by default, up to 6 on "Load More"
+  const visibleBreakoutPlayers = showAllBreakout ? breakoutPlayers.slice(0, 6) : breakoutPlayers.slice(0, 3);
 
   if (showLanding) {
     return <LandingPage onEnterApp={handleEnterApp} />;
@@ -887,15 +923,27 @@ export default function App() {
           </div>
         )}
 
+        {/* ─── Breakout Alerts ─────────────────────────────────────────── */}
         {!teamBuilderMode && !optimizeMode && (
           <div id="tour-breakout" className="mb-16">
-            <div className="flex items-center gap-3 mb-6">
-              <div className="p-2 bg-amber-500/10 rounded-lg border border-amber-500/20">
-                <Star className="w-5 h-5 text-amber-500" />
+            <div className="flex items-center justify-between mb-6">
+              <div className="flex items-center gap-3">
+                <div className="p-2 bg-amber-500/10 rounded-lg border border-amber-500/20">
+                  <Star className="w-5 h-5 text-amber-500" />
+                </div>
+                <h2 className="text-2xl font-bold text-slate-100">Breakout Alerts</h2>
               </div>
-              <h2 className="text-2xl font-bold text-slate-100">Breakout Alerts</h2>
+              {!isLoadingBreakout && breakoutPlayers.length > 3 && (
+                <button
+                  onClick={() => setShowAllBreakout(prev => !prev)}
+                  className="text-sm font-medium text-slate-400 hover:text-slate-200 transition-colors px-3 py-1.5 rounded-lg hover:bg-slate-800"
+                >
+                  {showAllBreakout ? 'Show Less' : 'Load More'}
+                </button>
+              )}
             </div>
-            {isLoadingBatch ? (
+
+            {isLoadingBreakout ? (
               <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
                 {[...Array(3)].map((_, i) => (
                   <div key={i} className="bg-slate-900/50 rounded-2xl p-6 border border-slate-800/50 h-40 animate-pulse">
@@ -909,11 +957,11 @@ export default function App() {
                   </div>
                 ))}
               </div>
-            ) : batchError ? (
-              <div className="text-rose-400 bg-rose-400/10 p-4 rounded-xl border border-rose-400/20">{batchError}</div>
+            ) : breakoutError ? (
+              <div className="text-rose-400 bg-rose-400/10 p-4 rounded-xl border border-rose-400/20">{breakoutError}</div>
             ) : (
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                {breakoutPlayers.map(player => (
+                {visibleBreakoutPlayers.map(player => (
                   <PlayerCard
                     key={player.id}
                     player={player}

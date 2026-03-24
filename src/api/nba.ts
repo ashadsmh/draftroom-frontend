@@ -39,8 +39,6 @@ export const searchPlayers = async (query: string, signal?: AbortSignal): Promis
   });
   const data = await handleResponse(response);
   
-  // Map the backend search response to satisfy the NbaPlayer interface
-  // and prevent UI crashes since the new backend search doesn't return team/position
   return (data?.data ?? []).map((player: any) => ({
     id: player.id,
     full_name: player.full_name,
@@ -146,20 +144,6 @@ export interface DraftRoomScoreResponse {
   season: string;
 }
 
-export interface DraftRoomScoreResponse {
-  player_id: number;
-  draftroom_score: number;
-  components: {
-    ts_rel_score: number;
-    play_score: number;
-    def_score: number;
-    ftr_score: number;
-    vol_eff_score: number;
-  };
-  games_sampled: number;
-  season: string;
-}
-
 export const getDraftRoomScore = async (playerId: number): Promise<DraftRoomScoreResponse | null> => {
   try {
     const response = await fetchWithRetry(`${BASE_URL}/players/${playerId}/draftroom-score`);
@@ -226,6 +210,10 @@ export interface BatchPlayer {
     ast: number;
     reb: number;
   };
+  delta: number;
+  minutes_trend: 'up' | 'down' | 'stable';
+  minutes_delta: number;
+  avg_minutes: number;
 }
 
 export const getBatchScores = async (playerIds: number[]): Promise<BatchPlayer[]> => {
@@ -239,6 +227,41 @@ export const getBatchScores = async (playerIds: number[]): Promise<BatchPlayer[]
     return [];
   }
 };
+
+// ─── Breakout Alerts ──────────────────────────────────────────────────────────
+
+export interface BreakoutPlayer {
+  id: number;
+  name: string;
+  position: string;
+  team: string;
+  score: number;
+  projected_score: number;
+  trend: 'up' | 'down' | 'stable';
+  stats: {
+    pts: number;
+    ast: number;
+    reb: number;
+  };
+  delta: number;
+  minutes_trend: 'up' | 'down' | 'stable';
+  minutes_delta: number;
+  avg_minutes: number;
+}
+
+export const getBreakoutAlerts = async (): Promise<BreakoutPlayer[]> => {
+  try {
+    const response = await fetch(`${BASE_URL}/players/batch-scores`);
+    if (!response.ok) return [];
+    const data = await response.json();
+    return data.breakout_alerts || [];
+  } catch (error) {
+    console.error("Failed to fetch breakout alerts", error);
+    return [];
+  }
+};
+
+// ─── Lineup Optimizer ─────────────────────────────────────────────────────────
 
 export interface OptimizedPlayer {
   id: number;
