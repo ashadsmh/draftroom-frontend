@@ -6,6 +6,7 @@ export function useSearch() {
   const [searchResults, setSearchResults] = useState<NbaPlayer[]>([]);
   const [isSearching, setIsSearching] = useState(false);
   const [searchError, setSearchError] = useState('');
+  const [forceShow, setForceShow] = useState(0);
   const abortControllerRef = useRef<AbortController | null>(null);
 
   useEffect(() => {
@@ -43,7 +44,13 @@ export function useSearch() {
     }, 300);
 
     return () => clearTimeout(timer);
-  }, [searchQuery]);
+  }, [searchQuery, forceShow]);
+
+  const triggerSearch = () => {
+    if (searchQuery.trim().length >= 3) {
+      setForceShow(n => n + 1);
+    }
+  };
 
   return {
     searchQuery,
@@ -52,6 +59,7 @@ export function useSearch() {
     setSearchResults,
     isSearching,
     searchError,
-    abortControllerRef
+    abortControllerRef,
+    triggerSearch,
   };
 }

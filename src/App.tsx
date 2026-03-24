@@ -48,7 +48,10 @@ export default function App() {
     setSearchResults,
     isSearching,
     searchError,
+    triggerSearch,
   } = useSearch();
+
+  const [highlightedIndex, setHighlightedIndex] = useState(-1);
 
   const { user, isLoading: isAuthLoading, signInWithGoogle, signOutUser } = useAuth();
   const { watchlist, setWatchlist, savedTeams, setSavedTeams } = useFirestoreData(user);
@@ -128,6 +131,11 @@ export default function App() {
   const [teamBCurrentSlot, setTeamBCurrentSlot] = useState<string>('PG');
   const [suppressTeamDeleteConfirm, setSuppressTeamDeleteConfirm] = useState(false);
   const [teamToDelete, setTeamToDelete] = useState<number | null>(null);
+
+  // Reset highlighted index whenever results change
+  useEffect(() => {
+    setHighlightedIndex(-1);
+  }, [searchResults]);
 
   const handleTourStart = useCallback(() => {
     setWatchlist(prev =>
@@ -542,10 +550,29 @@ export default function App() {
                   placeholder={currentPlaceholder}
                   value={searchQuery}
                   onChange={(e) => setSearchQuery(e.target.value)}
-                  onFocus={() => setIsFocused(true)}
+                  onFocus={() => {
+                    setIsFocused(true);
+                    triggerSearch();
+                  }}
                   onBlur={() => {
                     setIsFocused(false);
                     setTimeout(() => setSearchResults([]), 200);
+                  }}
+                  onKeyDown={(e) => {
+                    if (!searchResults.length) return;
+                    if (e.key === 'ArrowDown') {
+                      e.preventDefault();
+                      setHighlightedIndex(i => Math.min(i + 1, searchResults.length - 1));
+                    } else if (e.key === 'ArrowUp') {
+                      e.preventDefault();
+                      setHighlightedIndex(i => Math.max(i - 1, 0));
+                    } else if (e.key === 'Enter' && highlightedIndex >= 0) {
+                      e.preventDefault();
+                      handlePlayerSelect(searchResults[highlightedIndex]);
+                    } else if (e.key === 'Escape') {
+                      setSearchResults([]);
+                      setHighlightedIndex(-1);
+                    }
                   }}
                 />
                 {isSearching && (
@@ -557,11 +584,14 @@ export default function App() {
 
               {searchResults.length > 0 && isFocused && (
                 <div className="absolute top-full left-0 right-0 mt-2 bg-slate-900 border border-slate-800 rounded-xl shadow-2xl overflow-hidden z-50 max-h-80 overflow-y-auto">
-                  {searchResults.map((player) => (
+                  {searchResults.map((player, index) => (
                     <button
                       key={player.id}
-                      className="w-full text-left px-4 py-3 hover:bg-slate-800 transition-colors flex items-center justify-between border-b border-slate-800/50 last:border-0"
+                      className={`w-full text-left px-4 py-3 transition-colors flex items-center justify-between border-b border-slate-800/50 last:border-0 ${
+                        index === highlightedIndex ? 'bg-slate-700' : 'hover:bg-slate-800'
+                      }`}
                       onMouseDown={() => handlePlayerSelect(player)}
+                      onMouseEnter={() => setHighlightedIndex(index)}
                     >
                       <div className="text-slate-100 font-medium">
                         {player.first_name} {player.last_name}
