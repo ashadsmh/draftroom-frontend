@@ -4,6 +4,7 @@ export interface NbaPlayer {
   first_name: string;
   last_name: string;
   is_active: boolean;
+  // Added to prevent UI crashes in App.tsx which expects these fields
   position?: string;
   team: {
     full_name: string;
@@ -33,8 +34,13 @@ const fetchWithRetry = async (url: string, options?: RequestInit): Promise<Respo
 
 export const searchPlayers = async (query: string, signal?: AbortSignal): Promise<NbaPlayer[]> => {
   if (!query) return [];
-  const response = await fetch(`${BASE_URL}/players/search?query=${encodeURIComponent(query)}`, { signal });
+  const response = await fetch(`${BASE_URL}/players/search?query=${encodeURIComponent(query)}`, {
+    signal,
+  });
   const data = await handleResponse(response);
+  
+  // Map the backend search response to satisfy the NbaPlayer interface
+  // and prevent UI crashes since the new backend search doesn't return team/position
   return (data?.data ?? []).map((player: any) => ({
     id: player.id,
     full_name: player.full_name,
@@ -42,8 +48,18 @@ export const searchPlayers = async (query: string, signal?: AbortSignal): Promis
     last_name: player.last_name,
     is_active: player.is_active,
     position: 'N/A',
-    team: { full_name: 'NBA' }
+    team: {
+      full_name: 'NBA'
+    }
   }));
+};
+
+/**
+ * @deprecated The BallDontLie free tier does not support the season averages endpoint.
+ * Use getComputedAverages instead.
+ */
+export const getSeasonAverages = async (playerId: number) => {
+  return null;
 };
 
 export const getPlayerInfo = async (playerId: number) => {
@@ -51,7 +67,7 @@ export const getPlayerInfo = async (playerId: number) => {
     const response = await fetch(`${BASE_URL}/players/${playerId}`);
     if (!response.ok) return null;
     return await response.json();
-  } catch {
+  } catch (error) {
     return null;
   }
 };
@@ -67,12 +83,6 @@ export interface ComputedStats {
   daysSinceLastGame?: number;
 }
 
-export const getRecentGames = async (playerId: number) => {
-  const response = await fetchWithRetry(`${BASE_URL}/players/${playerId}/gamelog`);
-  const data = await handleResponse(response);
-  return data?.PlayerGameLog ?? [];
-};
-
 export const getComputedAverages = async (playerId: number): Promise<ComputedStats | null> => {
   try {
     const games = await getRecentGames(playerId);
@@ -80,6 +90,7 @@ export const getComputedAverages = async (playerId: number): Promise<ComputedSta
 
     const recentGames = games.slice(0, 10);
     const count = recentGames.length;
+
     let pts = 0, ast = 0, reb = 0, fg_pct = 0, stl = 0, blk = 0;
 
     recentGames.forEach((game: any) => {
@@ -92,9 +103,12 @@ export const getComputedAverages = async (playerId: number): Promise<ComputedSta
     });
 
     let daysSinceLastGame: number | undefined;
-    if (recentGames[0]?.GAME_DATE) {
-      const diffTime = new Date().getTime() - new Date(recentGames[0].GAME_DATE).getTime();
-      daysSinceLastGame = Math.max(0, Math.floor(diffTime / (1000 * 60 * 60 * 24)));
+    if (recentGames[0] && recentGames[0].GAME_DATE) {
+      const gameDate = new Date(recentGames[0].GAME_DATE);
+      const today = new Date();
+      const diffTime = today.getTime() - gameDate.getTime();
+      const diffDays = Math.floor(diffTime / (1000 * 60 * 60 * 24));
+      daysSinceLastGame = diffDays > 0 ? diffDays : 0;
     }
 
     return {
@@ -107,10 +121,30 @@ export const getComputedAverages = async (playerId: number): Promise<ComputedSta
       count,
       daysSinceLastGame,
     };
-  } catch {
+  } catch (error) {
     return null;
   }
 };
+
+export const getRecentGames = async (playerId: number) => {
+  const response = await fetchWithRetry(`${BASE_URL}/players/${playerId}/gamelog`);
+  const data = await handleResponse(response);
+  return data?.PlayerGameLog ?? [];
+};
+
+export interface DraftRoomScoreResponse {
+  player_id: number;
+  draftroom_score: number;
+  components: {
+    ts_rel_score: number;
+    play_score: number;
+    def_score: number;
+    ftr_score: number;
+    vol_eff_score: number;
+  };
+  games_sampled: number;
+  season: string;
+}
 
 export interface DraftRoomScoreResponse {
   player_id: number;
@@ -131,7 +165,7 @@ export const getDraftRoomScore = async (playerId: number): Promise<DraftRoomScor
     const response = await fetchWithRetry(`${BASE_URL}/players/${playerId}/draftroom-score`);
     if (!response.ok) return null;
     return await response.json();
-  } catch {
+  } catch (error) {
     return null;
   }
 };
@@ -154,7 +188,7 @@ export const getTrajectory = async (playerId: number): Promise<TrajectoryRespons
     const response = await fetchWithRetry(`${BASE_URL}/players/${playerId}/trajectory`);
     if (!response.ok) return null;
     return await response.json();
-  } catch {
+  } catch (error) {
     return null;
   }
 };
@@ -174,10 +208,25 @@ export const getDrHistory = async (playerId: number, games: '10' | '20' | '40' |
     const response = await fetchWithRetry(`${BASE_URL}/players/${playerId}/dr-history?games=${games}`);
     if (!response.ok) return [];
     return await response.json();
-  } catch {
+  } catch (error) {
     return [];
   }
 };
+
+export interface BatchPlayer {
+  id: number;
+  name: string;
+  position: string;
+  team: string;
+  score: number;
+  projected_score: number;
+  trend: 'up' | 'down' | 'stable';
+  stats: {
+    pts: number;
+    ast: number;
+    reb: number;
+  };
+}
 
 export interface BreakoutPlayer {
   id: number;
@@ -192,8 +241,6 @@ export interface BreakoutPlayer {
     ast: number;
     reb: number;
   };
-  delta: number;
-  avg_minutes: number;
 }
 
 export const getBreakoutAlerts = async (): Promise<BreakoutPlayer[]> => {
@@ -204,6 +251,18 @@ export const getBreakoutAlerts = async (): Promise<BreakoutPlayer[]> => {
     return data.breakout_alerts || [];
   } catch (error) {
     console.error("Failed to fetch breakout alerts", error);
+    return [];
+  }
+};
+
+export const getBatchScores = async (playerIds: number[]): Promise<BatchPlayer[]> => {
+  try {
+    const response = await fetch(`${BASE_URL}/players/batch-scores?player_ids=${playerIds.join(',')}`);
+    if (!response.ok) return [];
+    const data = await response.json();
+    return data.data || [];
+  } catch (error) {
+    console.error("Failed to fetch batch scores", error);
     return [];
   }
 };
@@ -229,7 +288,6 @@ export interface OptimizedPlayer {
   reasons: string[];
   stats: { pts: number; ast: number; reb: number; stl: number; blk: number };
   recommended_start: boolean;
-  injury_status?: string | null;
   error?: string | null;
 }
 
@@ -248,12 +306,14 @@ export const optimizeLineup = async (
   try {
     const response = await fetchWithRetry(`${BASE_URL}/lineup/optimize`, {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
+      headers: {
+        'Content-Type': 'application/json',
+      },
       body: JSON.stringify({ player_names: playerNames, season }),
     });
     if (!response.ok) return null;
     return await response.json();
-  } catch {
+  } catch (error) {
     return null;
   }
 };

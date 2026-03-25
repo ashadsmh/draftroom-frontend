@@ -1,4 +1,4 @@
-import React, { useState, useEffect, forwardRef, useImperativeHandle } from 'react';
+import React, { useState, useEffect, forwardRef, useImperativeHandle, useMemo } from 'react';
 import { AlertTriangle, X, Bookmark, RefreshCw } from 'lucide-react';
 import { TeamSlot, SavedTeam } from '../types';
 import { NbaPlayer } from '../api/nba';
@@ -225,7 +225,7 @@ const TeamBuilder = forwardRef<TeamBuilderRef, TeamBuilderProps>(({
   isComparingTeams, onComparisonModeChange, onTeamBSlotChange,
 }, ref) => {
 
-  const [teamResult, setTeamResult]       = useState<ReturnType<typeof calculateTeamScore>>(null);
+  const teamResult = useMemo(() => calculateTeamScore(teamSlots), [teamSlots]);
   const [mismatchWarning, setMismatchWarning] = useState<{
     player: NbaPlayer; slot: string; data: TeamSlot; isTeamB?: boolean;
   } | null>(null);
@@ -241,7 +241,7 @@ const TeamBuilder = forwardRef<TeamBuilderRef, TeamBuilderProps>(({
   // Team B state
   const [teamBSlots, setTeamBSlots]           = useState<Record<string, TeamSlot | null>>(EMPTY_TEAM_SLOTS);
   const [teamBCurrentSlot, setTeamBCurrentSlot] = useState<string>('PG');
-  const [teamBResult, setTeamBResult]         = useState<ReturnType<typeof calculateTeamScore>>(null);
+  const teamBResult = useMemo(() => calculateTeamScore(teamBSlots), [teamBSlots]);
   const [isTeamBSaved, setIsTeamBSaved]       = useState(false);
   const [currentTeamBId, setCurrentTeamBId]   = useState<number | null>(null);
   const [showTeamBNameInput, setShowTeamBNameInput] = useState(false);
@@ -320,16 +320,6 @@ const TeamBuilder = forwardRef<TeamBuilderRef, TeamBuilderProps>(({
     getActiveTeam:  () => activeTeam,
     getTeamBSlots:  () => teamBSlots,
   }));
-
-  // ─── Score recalculation ──────────────────────────────────────────────────
-
-  useEffect(() => {
-    setTeamResult(calculateTeamScore(teamSlots));
-  }, [teamSlots]);
-
-  useEffect(() => {
-    setTeamBResult(calculateTeamScore(teamBSlots));
-  }, [teamBSlots]);
 
   // ─── Save-team helpers ────────────────────────────────────────────────────
 
@@ -449,7 +439,6 @@ const TeamBuilder = forwardRef<TeamBuilderRef, TeamBuilderProps>(({
               onClearSlot(slot);
               setCurrentSlot(slot);
               setActiveTeam('A');
-              setTeamResult(null);
               resetTeamASaveState();
             }}
           />
@@ -512,7 +501,6 @@ const TeamBuilder = forwardRef<TeamBuilderRef, TeamBuilderProps>(({
               <button
                 onClick={() => {
                   onResetTeam();
-                  setTeamResult(null);
                   setSuppressPositionWarnings(false);
                   resetTeamASaveState();
                 }}
@@ -559,7 +547,7 @@ const TeamBuilder = forwardRef<TeamBuilderRef, TeamBuilderProps>(({
                   {savedTeams.map(team => (
                     <div
                       key={team.id}
-                      onClick={() => { setTeamBSlots(team.slots); setTeamBResult(team.scores); setShowSavedTeamsPanel(false); }}
+                      onClick={() => { setTeamBSlots(team.slots); setShowSavedTeamsPanel(false); }}
                       className="bg-slate-950 border border-slate-800 hover:border-indigo-500/50 rounded-lg p-3 cursor-pointer transition-colors"
                     >
                       <div className="font-bold text-slate-200 mb-2">{team.name || `Team ${team.id}`}</div>
@@ -585,7 +573,7 @@ const TeamBuilder = forwardRef<TeamBuilderRef, TeamBuilderProps>(({
                 accentClass="border-indigo-500 shadow-[0_0_15px_rgba(99,102,241,0.2)]"
                 drBadgeClass="bg-indigo-500/10 border-indigo-500/20 text-indigo-400"
                 onClick={() => { setTeamBCurrentSlot(slot); onTeamBSlotChange?.(slot); setActiveTeam('B'); }}
-                onClear={() => { setTeamBSlots(prev => ({ ...prev, [slot]: null })); setTeamBResult(null); }}
+                onClear={() => { setTeamBSlots(prev => ({ ...prev, [slot]: null })); }}
               />
             ))}
           </div>

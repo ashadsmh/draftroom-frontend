@@ -28,11 +28,19 @@ export function useSearch() {
       try {
         const results = await searchPlayers(searchQuery, controller.signal);
         setSearchResults(results);
-      } catch (err: any) {
-        if (err?.name === 'AbortError') {
+      } catch (err: unknown) {
+        if (err instanceof Error && err.name === 'AbortError') {
           return;
         }
-        const status = err?.response?.status || 'Unknown Status';
+        
+        let status: string | number = 'Unknown Status';
+        if (typeof err === 'object' && err !== null && 'response' in err) {
+          const response = (err as { response?: { status?: number | string } }).response;
+          if (response?.status) {
+            status = response.status;
+          }
+        }
+        
         console.error(`[searchPlayers] Failed with status ${status}:`, err);
         setSearchError(err instanceof Error ? err.message : 'An unknown error occurred');
         setSearchResults([]);

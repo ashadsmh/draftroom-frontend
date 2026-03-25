@@ -3,6 +3,7 @@ import {
   NbaPlayer, 
   DraftRoomScoreResponse, 
   TrajectoryResponse, 
+  ComputedStats,
   getPlayerInfo, 
   getComputedAverages, 
   getDraftRoomScore, 
@@ -12,7 +13,7 @@ import {
 interface UsePlayerDataProps {
   selectedPlayer: NbaPlayer | null;
   setSelectedPlayer: React.Dispatch<React.SetStateAction<NbaPlayer | null>>;
-  onStatsLoaded?: (stats: any) => void;
+  onStatsLoaded?: (stats: ComputedStats) => void;
   onScoreLoaded?: (score: DraftRoomScoreResponse) => void;
   onTrajectoryLoaded?: (traj: TrajectoryResponse) => void;
 }
@@ -24,7 +25,7 @@ export function usePlayerData({
   onScoreLoaded,
   onTrajectoryLoaded
 }: UsePlayerDataProps) {
-  const [selectedPlayerStats, setSelectedPlayerStats] = useState<any>(null);
+  const [selectedPlayerStats, setSelectedPlayerStats] = useState<ComputedStats | null>(null);
   const [isLoadingStats, setIsLoadingStats] = useState(false);
   const [selectedPlayerDraftScore, setSelectedPlayerDraftScore] = useState<DraftRoomScoreResponse | null>(null);
   const [isLoadingDraftScore, setIsLoadingDraftScore] = useState(false);
@@ -54,41 +55,44 @@ export function usePlayerData({
           }
         }
         
-        try {
-          const stats = await getComputedAverages(selectedPlayer.id);
-          setSelectedPlayerStats(stats);
-          if (onStatsLoaded) onStatsLoaded(stats);
-        } catch (err: any) {
-          const status = err?.response?.status || 'Unknown Status';
+        const [statsResult, scoreResult, trajResult] = await Promise.allSettled([
+          getComputedAverages(selectedPlayer.id),
+          getDraftRoomScore(selectedPlayer.id),
+          getTrajectory(selectedPlayer.id)
+        ]);
+
+        if (statsResult.status === 'fulfilled') {
+          setSelectedPlayerStats(statsResult.value);
+          if (onStatsLoaded) onStatsLoaded(statsResult.value);
+        } else {
+          const err = statsResult.reason;
+          const status = (err as any)?.response?.status || 'Unknown Status';
           console.error(`[getComputedAverages] Failed with status ${status}:`, err);
           setSelectedPlayerStats(null);
-        } finally {
-          setIsLoadingStats(false);
         }
+        setIsLoadingStats(false);
 
-        try {
-          const score = await getDraftRoomScore(selectedPlayer.id);
-          setSelectedPlayerDraftScore(score);
-          if (onScoreLoaded && score) onScoreLoaded(score);
-        } catch (err: any) {
-          const status = err?.response?.status || 'Unknown Status';
+        if (scoreResult.status === 'fulfilled') {
+          setSelectedPlayerDraftScore(scoreResult.value);
+          if (onScoreLoaded && scoreResult.value) onScoreLoaded(scoreResult.value);
+        } else {
+          const err = scoreResult.reason;
+          const status = (err as any)?.response?.status || 'Unknown Status';
           console.error(`[getDraftRoomScore] Failed with status ${status}:`, err);
           setSelectedPlayerDraftScore(null);
-        } finally {
-          setIsLoadingDraftScore(false);
         }
+        setIsLoadingDraftScore(false);
 
-        try {
-          const traj = await getTrajectory(selectedPlayer.id);
-          setSelectedPlayerTrajectory(traj);
-          if (onTrajectoryLoaded && traj) onTrajectoryLoaded(traj);
-        } catch (err: any) {
-          const status = err?.response?.status || 'Unknown Status';
+        if (trajResult.status === 'fulfilled') {
+          setSelectedPlayerTrajectory(trajResult.value);
+          if (onTrajectoryLoaded && trajResult.value) onTrajectoryLoaded(trajResult.value);
+        } else {
+          const err = trajResult.reason;
+          const status = (err as any)?.response?.status || 'Unknown Status';
           console.error(`[getTrajectory] Failed with status ${status}:`, err);
           setSelectedPlayerTrajectory(null);
-        } finally {
-          setIsLoadingTrajectory(false);
         }
+        setIsLoadingTrajectory(false);
       };
 
       fetchPlayerData();

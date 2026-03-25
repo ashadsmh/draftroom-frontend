@@ -31,9 +31,6 @@ export default function TourOverlay({ isActive, onEnd }: TourOverlayProps) {
           driverObj.destroy();
           onEnd();
         }
-      },
-      onPopoverRender: (popover, { config, state }) => {
-        // Optional: Custom popover rendering logic if needed
       }
     });
 
