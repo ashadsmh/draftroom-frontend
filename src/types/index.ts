@@ -1,5 +1,5 @@
-import { DraftRoomScoreResponse, TrajectoryResponse, ComputedStats } from './api/nba';
-import { NbaPlayer } from './api/nba';
+import { DraftRoomScoreResponse, TrajectoryResponse, ComputedStats } from '../api/nba';
+import { NbaPlayer } from '../api/nba';
 
 export interface Player {
   id: string;

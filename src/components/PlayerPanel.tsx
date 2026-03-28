@@ -2,8 +2,8 @@ import React, { useState, useEffect } from 'react';
 import { Loader2, TrendingUp, TrendingDown, Minus, Bookmark, X } from 'lucide-react';
 import { RadarChart, Radar, PolarGrid, PolarAngleAxis, ResponsiveContainer, LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ReferenceLine } from 'recharts';
 import { abbreviatePosition } from './PlayerCard';
-import { NbaPlayer, DraftRoomScoreResponse, TrajectoryResponse, getScoreColor, getScoreBg, getCareerTier } from '../types';
-import { getDrHistory, DrHistoryEntry } from '../api/nba';
+import { getScoreColor, getScoreBg, getCareerTier } from '../types';
+import { NbaPlayer, DraftRoomScoreResponse, TrajectoryResponse, getDraftRoomHistory, DrHistoryEntry } from '../api/nba';
 
 // ─── DR Score tooltip ─────────────────────────────────────────────────────────
 
@@ -94,7 +94,7 @@ const PlayerPanel: React.FC<PlayerPanelProps> = ({
     setHistoryError(null);
     setDrHistory([]);
 
-    getDrHistory(selectedPlayer.id, selectedRange)
+    getDraftRoomHistory(selectedPlayer.id, selectedRange)
       .then(data => {
         if (cancelled) return;
         if (!data || data.length === 0) setHistoryError('History unavailable');

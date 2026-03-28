@@ -19,10 +19,16 @@ export default defineConfig(({mode}) => {
       },
     },
     server: {
+      // HMR is disabled in AI Studio via DISABLE_HMR env var.
+      // Do not modify—file watching is disabled to prevent flickering during agent edits.
       hmr: env.DISABLE_HMR !== 'true',
+      proxy: {
+        '/players': 'http://localhost:8000',
+        '/lineup': 'http://localhost:8000',
+        '/health': 'http://localhost:8000',
+        '/ping': 'http://localhost:8000',
+        '/admin': 'http://localhost:8000',
+      }
     },
-    optimizeDeps: {
-      include: ['driver.js']
-    }
   };
 });

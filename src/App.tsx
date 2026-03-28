@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useRef, useMemo, useCallback } from 'react';
 import { Search, TrendingUp, Star, ChevronRight, Loader2, X, Bookmark, AlertTriangle, Zap, BarChart2 } from 'lucide-react';
-import { getComputedAverages, NbaPlayer, getDraftRoomScore, getTrajectory, getPlayerInfo, getBreakoutAlerts, BreakoutPlayer, pingBackend } from './api/nba';
-import PlayerCard, { abbreviatePosition } from './components/PlayerCard';
+import { getComputedAverages, NbaPlayer, getDraftRoomScore, getTrajectory, getPlayerInfo, getBreakoutAlerts, BreakoutPlayer, pingBackend, getBatchScores } from './api/nba';
+import PlayerCard, { abbreviatePosition, TrendIcon } from './components/PlayerCard';
 import PlayerPanel from './components/PlayerPanel';
 import ComparisonPanel from './components/ComparisonPanel';
 import TeamBuilder, { TeamBuilderRef } from './components/TeamBuilder';
@@ -14,7 +14,7 @@ import { usePlayerData } from './hooks/usePlayerData';
 import { useTour, LEBRON_ID } from './hooks/useTour';
 import { useAuth } from './hooks/useAuth';
 import { useFirestoreData } from './hooks/useFirestoreData';
-import { ComparisonPlayer, TeamSlot, Player, SavedTeam } from './types';
+import { ComparisonPlayer, TeamSlot, Player, SavedTeam, getScoreColor } from './types';
 
 // ─── Constants ────────────────────────────────────────────────────────────────
 
@@ -91,14 +91,17 @@ export default function App() {
 
   // ─── Player lists ────────────────────────────────────────────────────────
   const [players, setPlayers]               = useState<Player[]>([]);
+  const [visibleCount, setVisibleCount] = useState(10);
   const [breakoutPlayers, setBreakoutPlayers] = useState<Player[]>([]);
   const [isLoadingBreakout, setIsLoadingBreakout] = useState(true);
   const [breakoutError, setBreakoutError]   = useState<string | null>(null);
   const [showAllBreakout, setShowAllBreakout] = useState(false);
 
   // ─── Filters / sort ──────────────────────────────────────────────────────
-  const [selectedPosition, setSelectedPosition] = useState('All Positions');
-  const [selectedSort, setSelectedSort]         = useState('Highest Score');
+  const [positionFilter, setPositionFilter] = useState('All Positions');
+  const [sortFilter, setSortFilter] = useState('Highest Score');
+  const [isLoadingBatch, setIsLoadingBatch] = useState(true);
+  const [batchError, setBatchError] = useState<string | null>(null);
 
   // ─── Comparison ──────────────────────────────────────────────────────────
   const [comparisonMode, setComparisonMode]           = useState(false);
@@ -127,9 +130,56 @@ export default function App() {
   // ─── Ping backend on mount ───────────────────────────────────────────────
   useEffect(() => { pingBackend(); }, []);
 
-  // ─── Load top prospects (hardcoded) ─────────────────────────────────────
+  // ─── Load batch scores ───────────────────────────────────────────────────
   useEffect(() => {
-    setPlayers(HARDCODED_TOP_PROSPECTS);
+    setIsLoadingBatch(true);
+
+    const CACHE_KEY = "draftroom_batch_cache";
+    const CACHE_TTL = 2 * 60 * 60 * 1000; // 2 hours in ms
+
+    const mapPlayer = (p: any): Player => ({
+      id: String(p.id),
+      name: p.name,
+      position: p.position,
+      team: p.team,
+      score: p.score || null,
+      stats: p.stats || null,
+      trend: p.trend || null,
+    });
+
+    // Check localStorage first
+    try {
+      const cached = localStorage.getItem(CACHE_KEY);
+      if (cached) {
+        const { data, timestamp } = JSON.parse(cached);
+        if (Date.now() - timestamp < CACHE_TTL) {
+          setPlayers((data.leaderboard || []).map(mapPlayer));
+          setBreakoutPlayers((data.breakout_alerts || []).map(mapPlayer));
+          setIsLoadingBatch(false);
+          // Still fetch fresh data in background to keep cache warm
+          getBatchScores([]).then(response => {
+            localStorage.setItem(CACHE_KEY, JSON.stringify({ data: response, timestamp: Date.now() }));
+          }).catch(() => {});
+          return;
+        }
+      }
+    } catch {}
+
+    // No valid cache — fetch fresh
+    getBatchScores([])
+      .then((data: any) => {
+        setPlayers((data.leaderboard || []).map(mapPlayer));
+        setBreakoutPlayers((data.breakout_alerts || []).map(mapPlayer));
+        // Save to localStorage
+        try {
+          localStorage.setItem(CACHE_KEY, JSON.stringify({ data, timestamp: Date.now() }));
+        } catch {}
+      })
+      .catch(err => {
+        console.error("Batch fetch failed:", err);
+        setBatchError('Failed to load player data. Please refresh.');
+      })
+      .finally(() => setIsLoadingBatch(false));
   }, []);
 
   // ─── Load breakout alerts ────────────────────────────────────────────────
@@ -278,38 +328,7 @@ export default function App() {
     });
   }, [selectedPlayer, selectedPlayerDraftScore, selectedPlayerStats, selectedPlayerTrajectory, toggleBookmark]);
 
-  // ─── Filtered / sorted prospects ────────────────────────────────────────
-  const filteredAndSortedPlayers = useMemo(() => {
-    let result = [...players];
 
-    if (selectedPosition === 'Guards') {
-      result = result.filter(p => p.position === 'PG' || p.position === 'SG' || p.position.includes('G'));
-    } else if (selectedPosition === 'Forwards') {
-      result = result.filter(p => p.position === 'SF' || p.position === 'PF' || p.position.includes('F'));
-    } else if (selectedPosition === 'Centers') {
-      result = result.filter(p => p.position === 'C');
-    }
-
-    if (selectedSort === 'Trending Up') result = result.filter(p => p.trend === 'up');
-
-    result.sort((a, b) => {
-      if (selectedSort === 'Most Points') {
-        const aPts = a.stats?.pts ?? null;
-        const bPts = b.stats?.pts ?? null;
-        if (aPts === null && bPts === null) return 0;
-        if (aPts === null) return 1;
-        if (bPts === null) return -1;
-        return bPts - aPts;
-      }
-      // Default: Highest Score / Trending Up
-      if (a.score === null && b.score === null) return 0;
-      if (a.score === null) return 1;
-      if (b.score === null) return -1;
-      return b.score - a.score;
-    });
-
-    return result;
-  }, [players, selectedPosition, selectedSort]);
 
   // ─── Handlers ────────────────────────────────────────────────────────────
 
@@ -453,6 +472,25 @@ export default function App() {
   const visibleBreakoutPlayers = showAllBreakout
     ? breakoutPlayers.slice(0, 6)
     : breakoutPlayers.slice(0, 3);
+
+  const filteredPlayers = players
+    .filter(p => {
+      if (positionFilter === 'All Positions') return true;
+      if (positionFilter === 'Guards') return ['PG','SG','G'].includes(p.position);
+      if (positionFilter === 'Forwards') return ['SF','PF','F'].includes(p.position);
+      if (positionFilter === 'Centers') return ['C'].includes(p.position);
+      return true;
+    })
+    .sort((a, b) => {
+      if (sortFilter === 'Trending Up') {
+        const trendScore = (t: Player['trend']) => t === 'up' ? 2 : t === 'stable' ? 1 : 0;
+        return trendScore(b.trend) - trendScore(a.trend);
+      }
+      if (sortFilter === 'Most Points') {
+        return (b.stats?.pts ?? 0) - (a.stats?.pts ?? 0);
+      }
+      return (b.score ?? 0) - (a.score ?? 0); // default: Highest Score
+    });
 
   if (showLanding) return <LandingPage onEnterApp={handleEnterApp} />;
 
@@ -975,44 +1013,126 @@ export default function App() {
           </div>
         )}
 
-        {/* ─── Top Prospects ────────────────────────────────────────────── */}
+        {/* ─── Leaderboard ────────────────────────────────────────────── */}
         {!teamBuilderMode && !optimizeMode && (
           <div id="tour-prospects">
             <div className="flex items-center justify-between mb-6">
-              <h2 className="text-2xl font-bold text-slate-100">Top Prospects</h2>
-              <div className="flex gap-2">
-                <select
-                  className="bg-slate-900 border border-slate-800 text-slate-300 text-sm rounded-lg focus:ring-indigo-500 focus:border-indigo-500 block p-2 outline-none"
-                  value={selectedPosition}
-                  onChange={(e) => setSelectedPosition(e.target.value)}
-                >
-                  <option>All Positions</option>
-                  <option>Guards</option>
-                  <option>Forwards</option>
-                  <option>Centers</option>
-                </select>
-                <select
-                  className="bg-slate-900 border border-slate-800 text-slate-300 text-sm rounded-lg focus:ring-indigo-500 focus:border-indigo-500 block p-2 outline-none"
-                  value={selectedSort}
-                  onChange={(e) => setSelectedSort(e.target.value)}
-                >
-                  <option>Highest Score</option>
-                  <option>Trending Up</option>
-                  <option>Most Points</option>
-                </select>
+              <h2 className="text-2xl font-bold text-slate-100">Leaderboard</h2>
+            </div>
+            
+            {isLoadingBatch ? (
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                {[...Array(6)].map((_, i) => (
+                  <div key={i} className="bg-slate-900/50 rounded-2xl p-6 border border-slate-800/50 h-40 animate-pulse">
+                    <div className="flex gap-4 h-full">
+                      <div className="w-12 h-12 bg-slate-800 rounded-xl" />
+                      <div className="flex-1 space-y-3 py-1">
+                        <div className="h-4 bg-slate-800 rounded w-3/4" />
+                        <div className="h-3 bg-slate-800 rounded w-1/2" />
+                      </div>
+                    </div>
+                  </div>
+                ))}
               </div>
-            </div>
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-              {filteredAndSortedPlayers.map(player => (
-                <PlayerCard
-                  key={player.id}
-                  player={player}
-                  onSelect={handleSelectPlayerCard}
-                  isBookmarked={watchlist.some(p => p.id === player.id)}
-                  onToggleBookmark={toggleBookmark}
-                />
-              ))}
-            </div>
+            ) : batchError ? (
+              <div className="text-rose-400 bg-rose-400/10 p-4 rounded-xl border border-rose-400/20">{batchError}</div>
+            ) : (
+              <>
+                <div className="w-full bg-slate-900 rounded-2xl border border-slate-800 overflow-hidden">
+                  <table className="w-full text-left border-collapse">
+                    <thead>
+                      <tr className="bg-slate-950 text-slate-500 text-xs uppercase tracking-wider">
+                        <th className="px-4 py-3 font-medium">#</th>
+                        <th className="px-4 py-3 font-medium">Player</th>
+                        <th className="px-4 py-3 font-medium text-right">PTS</th>
+                        <th className="px-4 py-3 font-medium text-right">AST</th>
+                        <th className="px-4 py-3 font-medium text-right">REB</th>
+                        <th className="px-4 py-3 font-medium text-center">Trend</th>
+                        <th className="px-4 py-3 font-medium text-right">DR Score</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {players.slice(0, visibleCount).map((player, index) => (
+                        <tr 
+                          key={player.id} 
+                          onClick={() => handleSelectPlayerCard(player)}
+                          className="border-t border-slate-800 hover:bg-slate-800/50 transition-colors cursor-pointer"
+                        >
+                          <td className="px-4 py-4">
+                            <span className="text-slate-500 font-mono text-sm">{index + 1}</span>
+                          </td>
+                          <td className="px-4 py-4">
+                            <div className="flex items-center gap-3">
+                              <img
+                                src={`https://cdn.nba.com/headshots/nba/latest/1040x760/${player.id}.png`}
+                                alt={player.name}
+                                className="w-10 h-10 rounded-full object-cover object-top bg-slate-800"
+                                onError={(e) => { e.currentTarget.style.display = 'none' }}
+                                referrerPolicy="no-referrer"
+                              />
+                              <div className="flex flex-col">
+                                <div className="flex items-center gap-2">
+                                  <span className="font-semibold text-slate-200">{player.name}</span>
+                                  {player.position && (
+                                    <span className="px-1.5 py-0.5 text-[10px] font-bold bg-slate-800 border border-slate-700 text-slate-300 rounded-full">
+                                      {abbreviatePosition(player.position)}
+                                    </span>
+                                  )}
+                                </div>
+                                <span className="text-xs text-slate-500">{player.team}</span>
+                              </div>
+                            </div>
+                          </td>
+                          <td className="px-4 py-4 text-right">
+                            <span className="text-slate-200 font-semibold">{player.stats?.pts ?? '—'}</span>
+                          </td>
+                          <td className="px-4 py-4 text-right">
+                            <span className="text-slate-200 font-semibold">{player.stats?.ast ?? '—'}</span>
+                          </td>
+                          <td className="px-4 py-4 text-right">
+                            <span className="text-slate-200 font-semibold">{player.stats?.reb ?? '—'}</span>
+                          </td>
+                          <td className="px-4 py-4 text-center">
+                            <div className="flex justify-center">
+                              <TrendIcon trend={player.trend} />
+                            </div>
+                          </td>
+                          <td className="px-4 py-4 text-right">
+                            <div className="flex flex-col items-end">
+                              <span className={`text-lg font-bold ${player.score ? getScoreColor(player.score) : 'text-slate-500'}`}>
+                                {player.score ? player.score : '—'}
+                              </span>
+                              {player.score && <span className="text-[10px] text-slate-500 font-medium">DR</span>}
+                            </div>
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+                
+                {players.length > 10 && (
+                  <div className="mt-6 flex justify-center gap-3">
+                    {visibleCount === 10 && players.length > 10 && (
+                      <button
+                        onClick={() => setVisibleCount(25)}
+                        className="bg-slate-900 border border-slate-700 text-slate-300 text-sm px-4 py-2 rounded-lg hover:border-slate-500 transition-colors"
+                      >
+                        Show 25
+                      </button>
+                    )}
+                    {visibleCount === 25 && (
+                      <button
+                        onClick={() => setVisibleCount(10)}
+                        className="bg-slate-900 border border-slate-700 text-slate-300 text-sm px-4 py-2 rounded-lg hover:border-slate-500 transition-colors"
+                      >
+                        Show Less
+                      </button>
+                    )}
+                  </div>
+                )}
+              </>
+            )}
           </div>
         )}
       </main>
@@ -1042,9 +1162,6 @@ export default function App() {
 
       <TourOverlay
         isActive={isActive}
-        currentStep={currentStep}
-        onNext={nextStep}
-        onPrev={prevStep}
         onEnd={endTour}
       />
     </div>

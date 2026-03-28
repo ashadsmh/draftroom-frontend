@@ -11,7 +11,7 @@ export interface NbaPlayer {
   };
 }
 
-const BASE_URL = (import.meta as any).env?.VITE_API_URL || 'https://draftroom-backend-1gql.onrender.com';
+const BASE_URL = import.meta.env.VITE_API_URL || "http://localhost:8000";
 
 const handleResponse = async (response: Response) => {
   if (!response.ok) {
@@ -203,15 +203,19 @@ export interface DrHistoryEntry {
   reb: number;
 }
 
-export const getDrHistory = async (playerId: number, games: '10' | '20' | '40' | 'season' = '20'): Promise<DrHistoryEntry[]> => {
+export type DrHistoryResponse = DrHistoryEntry[];
+
+export const getDraftRoomHistory = async (playerId: number, games: number | string = 20): Promise<DrHistoryResponse> => {
   try {
     const response = await fetchWithRetry(`${BASE_URL}/players/${playerId}/dr-history?games=${games}`);
     if (!response.ok) return [];
-    return await response.json();
+    const data = await response.json();
+    return data.history || [];
   } catch (error) {
     return [];
   }
 };
+
 
 export interface BatchPlayer {
   id: number;
@@ -255,15 +259,15 @@ export const getBreakoutAlerts = async (): Promise<BreakoutPlayer[]> => {
   }
 };
 
-export const getBatchScores = async (playerIds: number[]): Promise<BatchPlayer[]> => {
+export const getBatchScores = async (playerIds?: number[]): Promise<any> => {
   try {
-    const response = await fetch(`${BASE_URL}/players/batch-scores?player_ids=${playerIds.join(',')}`);
-    if (!response.ok) return [];
-    const data = await response.json();
-    return data.data || [];
+    const query = playerIds && playerIds.length > 0 ? `?player_ids=${playerIds.join(',')}` : '';
+    const response = await fetch(`${BASE_URL}/players/batch-scores${query}`);
+    if (!response.ok) return {};
+    return await response.json();
   } catch (error) {
     console.error("Failed to fetch batch scores", error);
-    return [];
+    return {};
   }
 };
 
@@ -287,6 +291,8 @@ export interface OptimizedPlayer {
   tier: 'Lock In' | 'Start' | 'Monitor' | 'Sit';
   reasons: string[];
   stats: { pts: number; ast: number; reb: number; stl: number; blk: number };
+  injury_status?: string | null;
+  injury_reason?: string | null;
   recommended_start: boolean;
   error?: string | null;
 }

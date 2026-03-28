@@ -21,7 +21,7 @@ export const abbreviatePosition = (position: string): string => {
   return map[position] || position;
 };
 
-const TrendIcon = ({ trend }: { trend: Player['trend'] }) => {
+export const TrendIcon = ({ trend }: { trend: Player['trend'] }) => {
   if (!trend) return null;
   if (trend === 'up') return <TrendingUp className="w-5 h-5 text-emerald-400" />;
   if (trend === 'down') return <TrendingDown className="w-5 h-5 text-rose-400" />;
@@ -29,7 +29,7 @@ const TrendIcon = ({ trend }: { trend: Player['trend'] }) => {
   return null;
 };
 
-const PlayerCard = ({ player, isBreakout = false, onSelect, isBookmarked = false, onToggleBookmark, showBookmark = false }: { player: Player; isBreakout?: boolean; onSelect?: (player: Player) => void; isBookmarked?: boolean; onToggleBookmark?: (player: Player) => void; showBookmark?: boolean; key?: React.Key }) => {  return (
+const PlayerCard = ({ player, rank, isBreakout = false, onSelect, isBookmarked = false, onToggleBookmark, showBookmark = false }: { player: Player; rank?: number; isBreakout?: boolean; onSelect?: (player: Player) => void; isBookmarked?: boolean; onToggleBookmark?: (player: Player) => void; showBookmark?: boolean; key?: React.Key }) => {  return (
     <div className={`relative flex flex-col p-6 rounded-2xl border transition-all duration-300 hover:-translate-y-1 ${
       isBreakout 
         ? 'bg-slate-900 border-amber-500/30 shadow-[0_0_20px_rgba(245,158,11,0.05)] hover:border-amber-500/50 hover:shadow-[0_0_25px_rgba(245,158,11,0.1)]' 
@@ -39,6 +39,11 @@ const PlayerCard = ({ player, isBreakout = false, onSelect, isBookmarked = false
         <div className="absolute -top-3 -right-3 bg-amber-500 text-slate-950 text-xs font-bold px-3 py-1 rounded-full flex items-center gap-1 shadow-lg">
           <Star className="w-3 h-3 fill-slate-950" />
           BREAKOUT
+        </div>
+      )}
+      {rank && !isBreakout && (
+        <div className="absolute -top-3 -left-3 bg-slate-800 border border-slate-700 text-slate-300 text-xs font-bold w-8 h-8 rounded-full flex items-center justify-center shadow-lg z-10">
+          #{rank}
         </div>
       )}
       

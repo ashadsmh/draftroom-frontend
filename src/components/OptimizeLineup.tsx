@@ -111,7 +111,7 @@ const TrendIcon = ({ trend }: { trend: 'up' | 'down' | 'stable' }) => {
   return <Minus className="w-3.5 h-3.5 text-slate-500" />;
 };
 
-const ReasonPill = ({ reason }: { reason: string }) => {
+const ReasonPill = ({ reason, key }: { reason: string; key?: React.Key }) => {
   const isGood = reason.includes('🔥') || reason.includes('trending up') || reason.includes('Minutes up') || reason.includes('Elite') || reason.includes('Strong');
   const isBad = reason.includes('⚠️') || reason.includes('trending down') || reason.includes('reduced role');
   const base = 'text-xs px-2.5 py-1 rounded-lg border ';
@@ -123,7 +123,7 @@ const ReasonPill = ({ reason }: { reason: string }) => {
   return <span className={style}>{reason}</span>;
 };
 
-const PlayerTag = ({ tag, onRemove }: { tag: ResolvedTag; onRemove: () => void }) => {
+const PlayerTag = ({ tag, onRemove, key }: { tag: ResolvedTag; onRemove: () => void; key?: React.Key }) => {
   if (tag.status === 'resolving') {
     return (
       <div className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-slate-800 border border-slate-700 text-slate-400 text-sm">
@@ -163,10 +163,11 @@ const PlayerTag = ({ tag, onRemove }: { tag: ResolvedTag; onRemove: () => void }
   );
 };
 
-const PlayerResultCard = ({ player, rank, defaultExpanded = false }: {
+const PlayerResultCard = ({ player, rank, defaultExpanded = false, key }: {
   player: OptimizedPlayer;
   rank: number;
   defaultExpanded?: boolean;
+  key?: React.Key;
 }) => {
   const [expanded, setExpanded] = useState(defaultExpanded);
   const tierRankColor: Record<string, string> = {
@@ -175,6 +176,44 @@ const PlayerResultCard = ({ player, rank, defaultExpanded = false }: {
     'Monitor': 'bg-amber-500/20 text-amber-400 border border-amber-500/30',
     'Sit':     'bg-rose-500/20 text-rose-400 border border-rose-500/30',
   };
+
+  if (player.injury_status) {
+    return (
+      <div className="bg-slate-900 border border-slate-800 rounded-2xl overflow-hidden transition-all">
+        <div className="w-full text-left p-5 flex items-center gap-4">
+          <div className="w-8 h-8 rounded-full flex items-center justify-center text-sm font-black flex-shrink-0 bg-slate-800 text-slate-500 border border-slate-700">
+            {rank}
+          </div>
+          <div className="w-10 h-10 rounded-lg bg-slate-800 overflow-hidden flex-shrink-0 border border-slate-700">
+            <img
+              src={`https://cdn.nba.com/headshots/nba/latest/1040x760/${player.id}.png`}
+              alt={player.name}
+              className="w-full h-full object-cover"
+              onError={(e) => (e.currentTarget.style.display = 'none')}
+              referrerPolicy="no-referrer"
+            />
+          </div>
+          <div className="flex-1 min-w-0">
+            <div className="flex items-center gap-2 mb-1.5 flex-wrap">
+              <span className="text-slate-100 font-bold truncate">{player.name}</span>
+              <span className="text-[10px] font-bold px-2 py-0.5 rounded-full uppercase tracking-wider border bg-rose-500/20 text-rose-400 border-rose-500/30">
+                {player.injury_status}
+              </span>
+              {player.position && (
+                <span className="text-xs font-semibold px-2 py-0.5 rounded bg-slate-800 text-slate-300 border border-slate-700 flex-shrink-0">
+                  {player.position}
+                </span>
+              )}
+              <span className="text-xs text-slate-500 flex-shrink-0">{player.team}</span>
+            </div>
+            <div className="text-sm text-slate-400">
+              {player.injury_status}{player.injury_reason ? ` — ${player.injury_reason}` : ''}
+            </div>
+          </div>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="bg-slate-900 border border-slate-800 rounded-2xl overflow-hidden transition-all">

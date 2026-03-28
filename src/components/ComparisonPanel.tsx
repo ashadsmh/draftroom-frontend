@@ -1,9 +1,10 @@
 import React, { useState, useEffect } from 'react';
 import { Loader2, TrendingUp, TrendingDown, Minus, X } from 'lucide-react';
 import { RadarChart, Radar, PolarGrid, PolarAngleAxis, ResponsiveContainer, LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ReferenceLine } from 'recharts';
-import { ComparisonPlayer, TrajectoryResponse, getScoreColor, getScoreBg, getCareerTier } from '../types';
+import { ComparisonPlayer, getScoreColor, getScoreBg, getCareerTier } from '../types';
+import { TrajectoryResponse } from '../api/nba';
 import { abbreviatePosition } from './PlayerCard';
-import { getDrHistory, DrHistoryEntry } from '../api/nba';
+import { getDraftRoomHistory, DrHistoryEntry } from '../api/nba';
 
 const getStatColor = (val: number | undefined, allVals: (number | undefined)[]) => {
   const validVals = allVals.filter((v): v is number => v !== undefined);
@@ -46,7 +47,7 @@ export default function ComparisonPanel({ comparisonPlayers, onAddThird, onEndCo
         const results = await Promise.all(
           loadedIds.map(async id => {
             try {
-              const data = await getDrHistory(id, selectedRange);
+              const data = await getDraftRoomHistory(id, selectedRange);
               return { id, data };
             } catch (err) {
               return { id, data: [] };
