@@ -1017,7 +1017,7 @@ export default function App() {
         {!teamBuilderMode && !optimizeMode && (
           <div id="tour-prospects">
             <div className="flex items-center justify-between mb-6">
-              <h2 className="text-2xl font-bold text-slate-100">Leaderboard</h2>
+              <h2 className="text-2xl font-bold text-slate-100">🏆 Leaderboard</h2>
             </div>
             
             {isLoadingBatch ? (

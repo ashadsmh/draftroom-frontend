@@ -14,7 +14,7 @@ export const TOUR_STEPS: TourStep[] = [
   {
     elementId: 'tour-hero',
     title: '👋 Welcome to DraftRoom',
-    description: 'The analytics tool built for fantasy basketball. One heads up — we run on a free server, so your first search may take up to 60 seconds to load. Worth the wait.',
+    description: 'The analytics tool built for fantasy basketball. One heads up — we run on a free server, so your first search may <strong>take up to 60 seconds to load</strong>. Worth the wait.',
     position: 'bottom',
   },
   {
@@ -25,7 +25,7 @@ export const TOUR_STEPS: TourStep[] = [
   },
   {
     elementId: 'tour-prospects',
-    title: '🏆 Top Prospects',
+    title: '🏆 Leaderboard',
     description: 'The highest-rated players by DR Score right now. Filter by position or sort by trending up, most points, or highest score. Click any card to load their full analysis.',
     position: 'top',
   },
